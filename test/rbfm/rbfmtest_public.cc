@@ -38,6 +38,7 @@ namespace PeterDBTesting {
         ASSERT_EQ(rbfm.readRecord(fileHandle, recordDescriptor, rid, outBuffer), success)
                                     << "Reading a inBuffer should succeed.";
 
+        stream.str(std::string());
         stream.clear();
         rbfm.printRecord(recordDescriptor, outBuffer, stream);
         ASSERT_NO_FATAL_FAILURE(
@@ -88,6 +89,7 @@ namespace PeterDBTesting {
         ASSERT_EQ(rbfm.readRecord(fileHandle, recordDescriptor, rid, outBuffer), success)
                                     << "Reading a record should succeed.";
 
+        stream.str(std::string());
         stream.clear();
         rbfm.printRecord(recordDescriptor, outBuffer, stream);
         ASSERT_NO_FATAL_FAILURE(
