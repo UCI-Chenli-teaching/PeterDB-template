@@ -3,6 +3,10 @@
 
 #include <cmath>
 #include <fstream>
+#include <chrono>
+#include <numeric>
+#include <unordered_set>
+
 
 #include "src/include/rbfm.h"
 #include "gtest/gtest.h"
@@ -79,6 +83,29 @@ namespace PeterDBTesting {
             memset(indicator, 0, nullFieldsIndicatorActualSize);
             return indicator;
         }
+
+        static bool
+        checkTimeComplexity(const std::function<void()> &func, const std::function<unsigned()> &expectedTimeComplexity,
+                            const std::function<unsigned()> &metricFunc) {
+            unsigned lastMetric = 0;
+            std::unordered_set<unsigned> constants;
+            // Run target function 100 times
+            for (unsigned i = 0; i < 100; ++i) {
+                // Run the target function
+                func();
+                // Get metric for this run
+                unsigned metric = metricFunc();
+                // Get related N for this run
+                unsigned n = expectedTimeComplexity();
+                // Calculate delta/(expected N) to get the constant
+                constants.insert((metric - lastMetric) / n);
+                // Save the metric for next run
+                lastMetric = metric;
+            }
+            // If there are more than 50 distinct constants, the time complexity check is failed.
+            return constants.size() <= 50;
+        }
+
 
         // Record Descriptor for TweetMessage
         static void createRecordDescriptorForTweetMessage(std::vector<PeterDB::Attribute> &recordDescriptor) {
