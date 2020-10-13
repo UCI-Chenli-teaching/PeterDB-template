@@ -6,6 +6,7 @@
 ### Components (current):
  - PagedFileManager
  - RecordBasedFileManager
+ - RelationManager
  - ...
 
 ### Use CLion for development
@@ -44,7 +45,7 @@
 
 ### Project Instruction
  
-- Implement the PagedFileManager (PFM) and RecordBasedFileManager(RBFM) components. Write your implementation in the corresponding .cc files under `src` directory.
+- Implement the remaining RecordBasedFileManager(RBFM) and RelationManager(RM) components. Write your implementation in the corresponding .cc files under `src` directory.
 
 - DO NOT change the pre-defined APIs (classes, functions, methods) in the given .h files.
 If you think some changes are really necessary, please contact us first.
