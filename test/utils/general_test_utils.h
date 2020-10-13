@@ -132,7 +132,8 @@ namespace PeterDBTesting {
         return serializeMap(m);
     }
 
-    void checkPrintRecord(const std::string &expected, const std::string &target) {
+    void checkPrintRecord(const std::string &expected, const std::string &target, bool containsMode = false,
+                          const std::vector<std::string> &ignoreValues = std::vector<std::string>()) {
         GTEST_LOG_(INFO) << "Target string: " << target;
         if (std::strcmp(normalizeKVString(expected).c_str(), target.c_str()) == 0)
             return;
@@ -143,21 +144,61 @@ namespace PeterDBTesting {
         tsl::ordered_map<std::string, std::string> targetMap;
         convertToMap(target, targetMap);
 
-        ASSERT_EQ(targetMap.size(), expectedMap.size()) << "Fields count should be equal.";
+        if (!containsMode) {
+            ASSERT_EQ(targetMap.size(), expectedMap.size()) << "Fields count should be equal.";
+        } else {
+            ASSERT_GE(targetMap.size(), expectedMap.size()) << "Fields count should be greater or equal to expected.";
+        }
 
-        for (const auto &pair: targetMap) {
-            ASSERT_TRUE(expectedMap.contains(pair.first)) << "Field (" << pair.first << ") is not found.";
+        for (size_t i = 0; i < expectedMap.size(); i++) {
+            std::pair<std::string, std::string> targetPair = *(targetMap.begin() + i);
+            std::pair<std::string, std::string> expectedPair = *(expectedMap.begin() + i);
+            ASSERT_EQ(targetPair.first, expectedPair.first)
+                                        << "Field (" << targetPair.first
+                                        << ") is not found or not in correct order.";
 
-            if (isFloat(pair.second)) {
-                ASSERT_FLOAT_EQ(std::stof(pair.second), std::stof(expectedMap.at(pair.first)))
-                                            << "Field (" << pair.first
-                                            << ") value should be equal, float values are checked in a range.";
-            } else {
-                ASSERT_EQ(pair.second, expectedMap.at(pair.first))
-                                            << "Field (" << pair.first << ") value should be equal.";
+            if (std::find(ignoreValues.begin(), ignoreValues.end(), targetPair.first) == ignoreValues.end()) {
+                if (isFloat(targetPair.second)) {
+                    ASSERT_FLOAT_EQ(std::stof(targetPair.second), std::stof(expectedPair.second))
+                                                << "Field (" << targetPair.first
+                                                << ") value should be equal, float values are checked in a range.";
+                } else {
+                    ASSERT_EQ(targetPair.second, expectedPair.second)
+                                                << "Field (" << targetPair.first << ") value should be equal.";
+                }
             }
         }
 
+    }
+
+    static void getByteOffset(unsigned pos, unsigned &bytes, unsigned &offset) {
+        bytes = pos / 8;
+
+        offset = 7 - pos % 8;
+    }
+
+    static void setBit(char &src, bool value, unsigned offset) {
+        if (value) {
+            src |= (unsigned) 1 << offset;
+        } else {
+            src &= ~((unsigned) 1 << offset);
+        }
+    }
+
+    static void setAttrNull(void *src, ushort attrNum, bool isNull) {
+        unsigned bytes = 0;
+        unsigned pos = 0;
+        getByteOffset(attrNum, bytes, pos);
+        setBit(*((char *) src + bytes), isNull, pos);
+    }
+
+    // This code is required for testing to measure the memory usage of your code.
+    // If you can't compile the codebase because of this function, you can safely comment this function or remove it.
+    void memProfile() {
+        int who = RUSAGE_SELF;
+        struct rusage usage{};
+        getrusage(who, &usage);
+        std::cout << usage.ru_maxrss << "KB" << std::endl;
     }
 
 } // namespace PeterDBTesting

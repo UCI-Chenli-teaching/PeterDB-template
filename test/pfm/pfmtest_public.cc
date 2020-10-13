@@ -1,5 +1,5 @@
 #include "src/include/pfm.h"
-#include "pfm_test_utils.h"
+#include "test/utils/pfm_test_utils.h"
 
 namespace PeterDBTesting {
 
