@@ -128,7 +128,8 @@ namespace PeterDBTesting {
                                     << "indexManager::collectCounterValues() should succeed.";
 
         // check counters
-        EXPECT_EQ(rcAfter - rc, 2); // one for tree root pointer, one for the first tree node
+        EXPECT_IN_RANGE(rcAfter - rc, 2, 4);// at least two reads:
+        // one for tree root pointer, one for the first tree node
         EXPECT_IN_RANGE(wcAfter - wc, 0, 1); // persist counters
         EXPECT_EQ(acAfter - ac, 0); // no page appended during iteration.
 
@@ -605,7 +606,7 @@ namespace PeterDBTesting {
             ASSERT_EQ(ix.insertEntry(ixFileHandle, empNameAttr, &key, rid), success)
                                         << "indexManager::insertEntry() should succeed.";
 
-            if (i % 100 == testedAscii) {
+            if (i == testedAscii) {
                 rids.emplace_back(rid);
             }
         }
@@ -626,8 +627,8 @@ namespace PeterDBTesting {
         ASSERT_EQ(ix.printBTree(ixFileHandle, empNameAttr, stream), success)
                                     << "indexManager::printBTree() should succeed.";
 
-        // we give D a very large
-        // (1+n)n/2 <= PAGE_SIZE, thus n >= 2^6.5 =90.5, we would put very loose D as around 45.
+        // we give a very loose D
+        // (1+n)n/2 <= PAGE_SIZE, thus n >= 2^6.5 = 90.5, we would put very loose D as around 45.
         validateTree(stream, numOfEntries, numOfEntries + numOfMoreEntries, 2,
                      45, true);
 

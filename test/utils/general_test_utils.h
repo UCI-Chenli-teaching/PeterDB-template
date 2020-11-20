@@ -205,7 +205,7 @@ namespace PeterDBTesting {
         std::vector<std::string> result;
         while (!str.empty()) {
             int index = str.find(token);
-            if (index != string::npos) {
+            if (index != std::string::npos) {
                 result.push_back(str.substr(0, index));
                 str = str.substr(index + token.size());
                 if (str.empty())result.emplace_back(str);
