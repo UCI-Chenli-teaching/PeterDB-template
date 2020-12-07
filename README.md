@@ -3,12 +3,12 @@
 #### This is the project codebase for Principles of Data Management, PeterDB
 
 
-### Components (current):
+### Components:
  - PagedFileManager
  - RecordBasedFileManager
  - RelationManager
  - IndexManage
- - ...
+ - QueryEngine
 
 ### Use CLion for development
  - Simply open (or clone) the repo as a project in CLion
@@ -46,7 +46,7 @@
 
 ### Project Instruction
  
-- Implement the IndexManager(IX) component. Write your implementation in the corresponding .cc files under `src` directory.
+- Implement the QueryEngine(QE) component. Write your implementation in the corresponding .cc files under `src` directory.
 
 - DO NOT change the pre-defined APIs (classes, functions, methods) in the given .h files.
 If you think some changes are really necessary, please contact us first.
