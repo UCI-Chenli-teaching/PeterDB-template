@@ -86,4 +86,37 @@ namespace PeterDB {
         return -1;
     }
 
+    // QE IX related
+    RC RelationManager::createIndex(const std::string &tableName, const std::string &attributeName){
+        return -1;
+    }
+
+    RC RelationManager::destroyIndex(const std::string &tableName, const std::string &attributeName){
+        return -1;
+    }
+
+    // indexScan returns an iterator to allow the caller to go through qualified entries in index
+    RC RelationManager::indexScan(const std::string &tableName,
+                 const std::string &attributeName,
+                 const void *lowKey,
+                 const void *highKey,
+                 bool lowKeyInclusive,
+                 bool highKeyInclusive,
+                 RM_IndexScanIterator &rm_IndexScanIterator){
+        return -1;
+    }
+
+
+    RM_IndexScanIterator::RM_IndexScanIterator() = default;
+
+    RM_IndexScanIterator::~RM_IndexScanIterator() = default;
+
+    RC RM_IndexScanIterator::getNextEntry(RID &rid, void *key){
+        return -1;
+    }
+
+    RC RM_IndexScanIterator::close(){
+        return -1;
+    }
+
 } // namespace PeterDB

@@ -2,16 +2,16 @@
 
 
 ### 1. Basic information
- - Team #:
- - Github Repo Link:
- - Student 1 UCI NetID:
- - Student 1 Name:
- - Student 2 UCI NetID (if applicable):
- - Student 2 Name (if applicable):
+- Team #:
+- Github Repo Link:
+- Student 1 UCI NetID:
+- Student 1 Name:
+- Student 2 UCI NetID (if applicable):
+- Student 2 Name (if applicable):
 
 
 ### 2. Catalog information about Index
-- Show your catalog information about an index (tables, columns). 
+- Show your catalog information about an index (tables, columns).
 
 
 
@@ -31,7 +31,7 @@
 
 
 ### 6. Index Nested Loop Join
-- Describe how your index nested loop join works. 
+- Describe how your index nested loop join works.
 
 
 
@@ -45,11 +45,11 @@
 
 
 - Describe how your group-based aggregation works. (If you have implemented this feature)
-  
-  
+
+
 
 ### 9. Implementation Detail
-- Have you added your own module or source file (.cc or .h)? 
+- Have you added your own module or source file (.cc or .h)?
   Clearly list the changes on files and CMakeLists.txt, if any.
 
 
