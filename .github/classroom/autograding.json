@@ -38,7 +38,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 1,
-      "points": 3
+      "points": 2
     },
     {
       "name": "PFM_File_Test.destroy_nonexistent_file",
@@ -48,7 +48,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 1,
-      "points": 3
+      "points": 2
     },
     {
       "name": "PFM_File_Test.open_and_close_file",
@@ -58,7 +58,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 1,
-      "points": 3
+      "points": 2
     },
     {
       "name": "PFM_Page_Test.get_page_numbers",
@@ -68,7 +68,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 1,
-      "points": 3
+      "points": 2
     },
     {
       "name": "PFM_Page_Test.read_nonexistent_page",
@@ -78,7 +78,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 1,
-      "points": 3
+      "points": 2
     },
     {
       "name": "PFM_Page_Test.append_and_read_pages",
@@ -88,7 +88,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 1,
-      "points": 3
+      "points": 2
     },
     {
       "name": "PFM_Page_Test.write_nonexistent_page",
@@ -98,7 +98,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 1,
-      "points": 3
+      "points": 2
     },
     {
       "name": "PFM_Page_Test.write_and_read_pages",
@@ -108,7 +108,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 1,
-      "points": 3
+      "points": 2
     },
     {
       "name": "PFM_Page_Test.append_and_write_and_read_pages",
@@ -118,7 +118,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 1,
-      "points": 3
+      "points": 2
     },
     {
       "name": "RBFM_Test.insert_and_read_a_record",
@@ -128,7 +128,7 @@
       "output": "",
       "comparison": "included",
       "timeout": 1,
-      "points": 5
+      "points": 4
     },
     {
       "name": "RBFM_Test.insert_and_read_a_record_with_null",
