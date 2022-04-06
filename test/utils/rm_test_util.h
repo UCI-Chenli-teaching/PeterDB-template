@@ -7,6 +7,92 @@
 #include "test/utils/rbfm_test_utils.h"
 
 namespace PeterDBTesting {
+    struct Tweet {
+        unsigned tweet_id;
+        std::string text;
+        unsigned user_id;
+        float sentiment;
+        std::string hash_tags;
+        std::string embedded_url;
+        float lat;
+        float lng;
+
+        Tweet() {
+
+        }
+
+        Tweet(void *buffer) {
+            char nullsIndicator = *(char *) buffer;
+            unsigned offset = 1;
+
+            if ((nullsIndicator >> 7u) & 1u) {
+                tweet_id = -1;
+            } else {
+                tweet_id = *(unsigned *) ((char *) buffer + offset);
+                offset += sizeof(unsigned);
+            }
+
+            if ((nullsIndicator >> 6u) & 1u) {
+                text = "";
+            } else {
+                unsigned len = *(unsigned *) ((char *) buffer + offset);
+                offset += sizeof(unsigned);
+                char s[len + 1];
+                memcpy(&s, (char *) buffer + offset, len);
+                s[len] = '\0';
+                text = std::string(s);
+                offset += len;
+            }
+
+            if ((nullsIndicator >> 5u) & 1u) {
+                user_id = -1;
+            } else {
+                user_id = *(unsigned *) ((char *) buffer + offset);
+                offset += sizeof(unsigned);
+            }
+            if ((nullsIndicator >> 4u) & 1u) {
+                sentiment = -1;
+            } else {
+                sentiment = *(float *) ((char *) buffer + offset);
+                offset += sizeof(float);
+            }
+
+            if ((nullsIndicator >> 3u) & 1u) {
+                hash_tags = "";
+            } else {
+                unsigned len = *(unsigned *) ((char *) buffer + offset);
+                offset += sizeof(unsigned);
+                char s[len + 1];
+                memcpy(&s, (char *) buffer + offset, len);
+                s[len] = '\0';
+                hash_tags = std::string(s);
+                offset += len;
+            }
+            if ((nullsIndicator >> 2u) & 1u) {
+                embedded_url = "";
+            } else {
+                unsigned len = *(unsigned *) ((char *) buffer + offset);
+                offset += sizeof(unsigned);
+                char s[len + 1];
+                memcpy(&s, (char *) buffer + offset, len);
+                s[len] = '\0';
+                embedded_url = std::string(s);
+                offset += len;
+            }
+            if ((nullsIndicator >> 1u) & 1u) {
+                lat = -1;
+            } else {
+                lat = *(float *) ((char *) buffer + offset);
+                offset += sizeof(float);
+            }
+            if (nullsIndicator & 1u) {
+                lng = -1;
+            } else {
+                lng = *(float *) ((char *) buffer + offset);
+            }
+
+        }
+    };
 
     class RM_Catalog_Test : public ::testing::Test {
 
@@ -234,7 +320,7 @@ namespace PeterDBTesting {
             ASSERT_EQ(rm.printTuple(attrs, outBuffer, stream), success)
                                         << "RelationManager::printTuple() should succeed.";
             // Here we check only the needed fields, some values are ignored (marked "x")
-            checkPrintRecord(expectedString, stream.str(), true, {"table-id"});
+            checkPrintRecord(expectedString, stream.str(), true, {"table-id"}, true);
         }
     };
 
@@ -245,22 +331,21 @@ namespace PeterDBTesting {
     public:
         void SetUp() override {
 
-            if (!fileExists(tableName)) {
+            // Try to delete the System Catalog.
+            // If this is the first time, it will generate an error. It's OK and we will ignore that.
+            rm.deleteCatalog();
 
-                // Try to delete the System Catalog.
-                // If this is the first time, it will generate an error. It's OK and we will ignore that.
-                rm.deleteCatalog();
+            remove(tableName.c_str());
 
-                // Create Catalog
-                ASSERT_EQ(rm.createCatalog(), success) << "Creating the Catalog should succeed.";
+            // Create Catalog
+            ASSERT_EQ(rm.createCatalog(), success) << "Creating the Catalog should succeed.";
 
-                // Create a table
-                std::vector<PeterDB::Attribute> table_attrs = parseDDL(
-                        "CREATE TABLE " + tableName + " (emp_name VARCHAR(40), age INT, height REAL, salary REAL)");
-                ASSERT_EQ(rm.createTable(tableName, table_attrs), success)
-                                            << "Create table " << tableName << " should succeed.";
-                ASSERT_TRUE(fileExists(tableName)) << "Table " << tableName << " file should exist now.";
-            }
+            // Create a table
+            std::vector<PeterDB::Attribute> table_attrs = parseDDL(
+                    "CREATE TABLE " + tableName + " (emp_name VARCHAR(40), age INT, height REAL, salary REAL)");
+            ASSERT_EQ(rm.createTable(tableName, table_attrs), success)
+                                        << "Create table " << tableName << " should succeed.";
+            ASSERT_TRUE(fileExists(tableName)) << "Table " << tableName << " file should exist now.";
 
         }
 
@@ -272,11 +357,212 @@ namespace PeterDBTesting {
             free(nullsIndicator);
             free(nullsIndicatorWithNull);
 
-            if (destroyFile) {
-                // Destroy the file
-                ASSERT_EQ(rm.deleteTable(tableName), success) << "Destroying the file should not fail.";
-            }
+
+            // Destroy the file
+            ASSERT_EQ(rm.deleteTable(tableName), success) << "Destroying the file should not fail.";
+
+            rm.deleteCatalog();
         }
+    };
+
+    class RM_Catalog_Scan_Test_2 : public RM_Catalog_Scan_Test {
+    protected:
+
+        std::vector<PeterDB::RID> rids;
+        std::vector<char> nullsIndicators;
+
+    public:
+        void SetUp() override {
+            tableName = "rm_test_table_2";
+
+            // Try to delete the System Catalog.
+            // If this is the first time, it will generate an error. It's OK and we will ignore that.
+            rm.deleteCatalog();
+
+            remove(tableName.c_str());
+
+            // Create Catalog
+            ASSERT_EQ(rm.createCatalog(), success) << "Creating the Catalog should succeed.";
+
+            // Create a table
+            std::vector<PeterDB::Attribute> table_attrs = parseDDL(
+                    "CREATE TABLE " + tableName +
+                    " (tweet_id INT, text VARCHAR(400), user_id INT, sentiment REAL, hash_tags VARCHAR(100), embedded_url VARCHAR(200), lat REAL, lng REAL)");
+            ASSERT_EQ(rm.createTable(tableName, table_attrs), success)
+                                        << "Create table " << tableName << " should succeed.";
+            ASSERT_TRUE(fileExists(tableName)) << "Table " << tableName << " file should exist now.";
+
+        }
+
+        void validateAttribute(const unsigned &attrID, const unsigned &index, const unsigned &seed,
+                               const unsigned &salt) {
+            std::string attributeName;
+            if (attrID == 0) {
+                attributeName = "tweet_id";
+            } else if (attrID == 1) {
+                attributeName = "text";
+            } else if (attrID == 2) {
+                attributeName = "user_id";
+            } else if (attrID == 3) {
+                attributeName = "sentiment";
+            } else if (attrID == 4) {
+                attributeName = "hash_tags";
+            } else if (attrID == 5) {
+                attributeName = "embedded_url";
+            } else if (attrID == 6) {
+                attributeName = "lat";
+            } else if (attrID == 7) {
+                attributeName = "lng";
+            }
+
+
+            // Read Attribute
+            ASSERT_EQ(rm.readAttribute(tableName, rids[index], attributeName, outBuffer), success)
+                                        << "RelationManager::readAttribute() should succeed.";
+
+            nullsIndicator[0] = nullsIndicators[index];
+            Tweet tweet;
+            size_t tupleSize;
+            generateTuple(nullsIndicator, inBuffer, seed, salt, tupleSize, tweet);
+
+            if ((nullsIndicator[0] >> (7u - attrID)) & 1u) {
+                EXPECT_EQ(*((unsigned char *) outBuffer), 128u)
+                                    << "returned " << attributeName << " field should be null";
+            } else {
+                if (attributeName == "tweet_id") {
+
+                    EXPECT_EQ(memcmp(((char *) outBuffer + 1), &tweet.tweet_id, sizeof(unsigned)), 0)
+                                        << "returned tweet_id field is not correct.";
+
+                } else if (attributeName == "text") {
+                    EXPECT_EQ(*(unsigned *) ((char *) outBuffer + 1), tweet.text.length())
+                                        << "returned text field length is not correct.";
+                    EXPECT_EQ(memcmp(((char *) outBuffer + 1 + sizeof(unsigned)), tweet.text.c_str(),
+                                     tweet.text.length()), 0)
+                                        << "returned text field is not correct.";
+
+                } else if (attributeName == "user_id") {
+                    EXPECT_EQ(memcmp(((char *) outBuffer + 1), &tweet.user_id, sizeof(unsigned)), 0)
+                                        << "returned user_id field is not correct.";
+
+                } else if (attributeName == "sentiment") {
+                    EXPECT_EQ(memcmp(((char *) outBuffer + 1), &tweet.sentiment, sizeof(float)), 0)
+                                        << "returned sentiment field is not correct.";
+
+                } else if (attributeName == "hash_tags") {
+                    EXPECT_EQ(*(unsigned *) ((char *) outBuffer + 1), tweet.hash_tags.length())
+                                        << "returned hash_tags field length is not correct.";
+                    EXPECT_EQ(memcmp(((char *) outBuffer + 1 + sizeof(unsigned)), tweet.hash_tags.c_str(),
+                                     tweet.hash_tags.length()), 0)
+                                        << "returned hash_tags field is not correct.";
+
+                } else if (attributeName == "embedded_url") {
+                    EXPECT_EQ(*(unsigned *) ((char *) outBuffer + 1), tweet.embedded_url.length())
+                                        << "returned embedded_url field length is not correct.";
+                    EXPECT_EQ(memcmp(((char *) outBuffer + 1 + sizeof(unsigned)), tweet.embedded_url.c_str(),
+                                     tweet.embedded_url.length()),
+                              0) << "returned embedded_url field is not correct.";
+
+                } else if (attributeName == "lat") {
+                    EXPECT_EQ(memcmp(((char *) outBuffer + 1), &tweet.lat, sizeof(float)), 0)
+                                        << "returned lat field is not correct.";
+
+                } else if (attributeName == "lng") {
+                    EXPECT_EQ(memcmp(((char *) outBuffer + 1), &tweet.lng, sizeof(float)), 0)
+                                        << "returned lng field is not correct.";
+
+                }
+            }
+
+        }
+
+        void generateTuple(const unsigned char *nullsIndicator, void *buffer, const unsigned &seed,
+                           const unsigned &salt, size_t &tupleSize, Tweet &tweet) {
+
+            unsigned offset = 0;
+
+            // Null-indicators
+
+            unsigned nullAttributesIndicatorActualSize = getActualByteForNullsIndicator(8);
+
+            // Null-indicator for the fields
+            memcpy((char *) buffer + offset, nullsIndicator, nullAttributesIndicatorActualSize);
+            offset += nullAttributesIndicatorActualSize;
+
+            std::default_random_engine generator(seed);
+            std::uniform_int_distribution<unsigned> dist400(0, 400);
+            std::uniform_int_distribution<unsigned> dist100(0, 100);
+            std::uniform_int_distribution<unsigned> dist200(0, 200);
+
+
+            // Is the tweet_id field not-NULL?
+            if (!((nullsIndicator[0] >> 7u) & 1u)) {
+                *(unsigned *) ((char *) buffer + offset) = salt + seed;
+                offset += sizeof(unsigned);
+            }
+
+            // Is the text field not-NULL?
+            if (!((nullsIndicator[0] >> 6u) & 1u)) {
+                unsigned len = dist400(generator);
+                *(unsigned *) ((char *) buffer + offset) = len;
+                offset += sizeof(unsigned);
+                for (unsigned i = 0; i < len; i++) {
+                    *((char *) buffer + offset++) = dist400(generator) % 26 + 'A';
+                }
+            }
+
+            // Is the user_id field not-NULL?
+            if (!((nullsIndicator[0] >> 5u) & 1u)) {
+                *(unsigned *) ((char *) buffer + offset) = 2 * seed + salt;
+                offset += sizeof(unsigned);
+            }
+
+            // Is the sentiment field not-NULL?
+            if (!((nullsIndicator[0] >> 4u) & 1u)) {
+                *(float *) ((char *) buffer + offset) = salt / 2.3 * seed * 1000;
+                offset += sizeof(float);
+            }
+
+            // Is the hash_tag field not-NULL?
+            if (!((nullsIndicator[0] >> 3u) & 1u)) {
+                unsigned len = dist100(generator);
+                *(unsigned *) ((char *) buffer + offset) = len;
+                offset += sizeof(unsigned);
+                for (unsigned i = 0; i < len; i++) {
+                    *((char *) buffer + offset) = dist100(generator) % 26 + 'A';
+                    offset += 1;
+                }
+            }
+
+            // Is the embedded_url field not-NULL?
+            if (!((nullsIndicator[0] >> 2u) & 1u)) {
+                unsigned len = dist200(generator);
+                *(unsigned *) ((char *) buffer + offset) = len;
+                offset += sizeof(unsigned);
+                for (unsigned i = 0; i < len; i++) {
+                    *((char *) buffer + offset) = dist200(generator) % 26 + 'A';
+                    offset += 1;
+                }
+            }
+
+            // Is the lat field not-NULL?
+            if (!((nullsIndicator[0] >> 1u) & 1u)) {
+                *(float *) ((char *) buffer + offset) = (dist100(generator) % 45) * 4.0f;
+                offset += sizeof(float);
+            }
+
+            // Is the lng field not-NULL?
+            if (!(nullsIndicator[0] & 1u)) {
+                *(float *) ((char *) buffer + offset) = (dist100(generator) % 60) * 3.0f;
+                offset += sizeof(float);
+            }
+
+            tupleSize = offset;
+
+            tweet = Tweet(inBuffer);
+
+        }
+
     };
 
     // Function to prepare the data in the correct form to be inserted/read/updated

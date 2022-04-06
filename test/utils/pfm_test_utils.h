@@ -64,6 +64,40 @@ namespace PeterDBTesting {
             ASSERT_EQ(pfm.openFile(fileName, fileHandle), success) << "Opening the file should not fail: " << fileName;
         }
     };
+
+    class PFM_Page_Test_2 : public PFM_Page_Test {
+        void SetUp() override {
+
+            fileName = "pfm_test_file_2";
+
+            if (!fileExists(fileName)) {
+                // Create a file
+                ASSERT_EQ(pfm.createFile(fileName), success) << "Creating the file should not fail: " << fileName;
+                ASSERT_TRUE(fileExists(fileName)) << "The file is not found: " << fileName;
+
+            }
+
+            // Open the file
+            ASSERT_EQ(pfm.openFile(fileName, fileHandle), success) << "Opening the file should not fail: " << fileName;
+
+        }
+
+        void TearDown() override {
+
+            // Destruct the buffers
+            free(inBuffer);
+            free(outBuffer);
+
+            // Close the file
+            ASSERT_EQ(pfm.closeFile(fileHandle), success) << "Closing the file should not fail.";
+
+            if (destroyFile) {
+                // Destroy the file
+                ASSERT_EQ(pfm.destroyFile(fileName), success) << "Destroying the file should not fail.";
+            }
+
+        }
+    };
 } // namespace PeterDBTesting
 
 #endif // PFM_TEST_UTILS_H

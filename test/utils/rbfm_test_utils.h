@@ -3,6 +3,9 @@
 
 #include <cmath>
 #include <fstream>
+#include <chrono>
+#include <numeric>
+#include <unordered_set>
 
 #include "src/include/rbfm.h"
 #include "gtest/gtest.h"
@@ -23,7 +26,7 @@ namespace PeterDBTesting {
     }
 
     static unsigned char *initializeNullFieldsIndicator(const std::vector<PeterDB::Attribute> &recordDescriptor) {
-        int nullFieldsIndicatorActualSize = getActualByteForNullsIndicator(recordDescriptor.size());
+        int nullFieldsIndicatorActualSize = getActualByteForNullsIndicator((int) recordDescriptor.size());
         auto indicator = new unsigned char[nullFieldsIndicatorActualSize];
         memset(indicator, 0, nullFieldsIndicatorActualSize);
         return indicator;
@@ -38,28 +41,28 @@ namespace PeterDBTesting {
         a[ddl.size()] = 0;
         memcpy(a, ddl.c_str(), ddl.size());
         char *tokenizer = strtok(a, delimiters.c_str());
-        if (tokenizer != NULL) {
+        if (tokenizer != nullptr) {
             if (std::string(tokenizer) == "CREATE") {
-                tokenizer = strtok(NULL, delimiters.c_str());
-                if (tokenizer == NULL) {
+                tokenizer = strtok(nullptr, delimiters.c_str());
+                if (tokenizer == nullptr) {
                 } else {
                     std::string type = std::string(tokenizer);
-                    char *tokenizer = strtok(NULL, delimiters.c_str());
+                    tokenizer = strtok(nullptr, delimiters.c_str());
                     std::string name = std::string(tokenizer);
 
                     // parse columnNames and types
 
                     PeterDB::Attribute attr;
-                    while (tokenizer != NULL) {
+                    while (tokenizer != nullptr) {
                         // get name if there is
-                        tokenizer = strtok(NULL, delimiters.c_str());
-                        if (tokenizer == NULL) {
+                        tokenizer = strtok(nullptr, delimiters.c_str());
+                        if (tokenizer == nullptr) {
                             break;
                         }
                         attr.name = std::string(tokenizer);
 
                         // get type
-                        tokenizer = strtok(NULL, delimiters.c_str());
+                        tokenizer = strtok(nullptr, delimiters.c_str());
                         if (std::string(tokenizer) == "INT") {
                             attr.type = PeterDB::TypeInt;
                             attr.length = 4;
@@ -69,19 +72,20 @@ namespace PeterDBTesting {
                         } else if (std::string(tokenizer) == "VARCHAR") {
                             attr.type = PeterDB::TypeVarChar;
                             // read length
-                            tokenizer = strtok(NULL, delimiters.c_str());
-                            attr.length = atoi(tokenizer);
+                            tokenizer = strtok(nullptr, delimiters.c_str());
+                            attr.length = strtol(tokenizer, nullptr, 10);
                         }
                         table_attrs.push_back(attr);
                     }
 
                 }
             }
-
+            delete[] a;
             return table_attrs;
         }
-        return std::vector<PeterDB::Attribute>();
-    };
+        delete[] a;
+        return std::vector<PeterDB::Attribute>{};
+    }
 
     // Write RIDs to a disk - do not use this code.
     // This is not a page-based operation. For test purpose only.
@@ -198,18 +202,10 @@ namespace PeterDBTesting {
             }
         }
 
-        void reopenFile(const std::string &fileName, PeterDB::FileHandle &fileHandle) {
-            // Close the file
-            ASSERT_EQ(rbfm.closeFile(fileHandle), success) << "Closing the file should not fail.";
-            // Open the file
-            fileHandle = PeterDB::FileHandle();
-            ASSERT_EQ(rbfm.openFile(fileName, fileHandle), success) << "Opening the file should not fail: " << fileName;
-        }
-
         void readRecord(const std::vector<PeterDB::Attribute> &recordDescriptor, const PeterDB::RID &rid,
                         const std::string &str) {
             size_t recordSize;
-            prepareRecord(recordDescriptor.size(), nullsIndicator, str.length(), str, 25, 177.8, 6200,
+            prepareRecord((int) recordDescriptor.size(), nullsIndicator, (int) str.length(), str, 25, 177.8, 6200,
                           inBuffer, recordSize);
 
             ASSERT_EQ(rbfm.readRecord(fileHandle, recordDescriptor, rid, outBuffer), success)
@@ -222,7 +218,7 @@ namespace PeterDBTesting {
         void insertRecord(const std::vector<PeterDB::Attribute> &recordDescriptor, PeterDB::RID &rid,
                           const std::string &str) {
             size_t recordSize;
-            prepareRecord(recordDescriptor.size(), nullsIndicator, str.length(), str, 25, 177.8, 6200,
+            prepareRecord((int) recordDescriptor.size(), nullsIndicator, (int) str.length(), str, 25, 177.8, 6200,
                           inBuffer, recordSize);
 
             ASSERT_EQ(rbfm.insertRecord(fileHandle, recordDescriptor, inBuffer, rid), success)
@@ -233,7 +229,7 @@ namespace PeterDBTesting {
         void updateRecord(const std::vector<PeterDB::Attribute> &recordDescriptor, PeterDB::RID &rid,
                           const std::string &str) {
             size_t recordSize;
-            prepareRecord(recordDescriptor.size(), nullsIndicator, str.length(), str, 25, 177.8, 6200,
+            prepareRecord((int) recordDescriptor.size(), nullsIndicator, (int) str.length(), str, 25, 177.8, 6200,
                           inBuffer, recordSize);
 
             ASSERT_EQ(rbfm.updateRecord(fileHandle, recordDescriptor, inBuffer, rid), success)
@@ -254,7 +250,6 @@ namespace PeterDBTesting {
             int offset = 0;
 
             // Null-indicators
-            bool nullBit = false;
             int nullFieldsIndicatorActualSize = getActualByteForNullsIndicator(
                     fieldCount);
 
@@ -268,7 +263,7 @@ namespace PeterDBTesting {
             // e.g., if a record consists of four fields and they are all nulls, then the bit representation will be: [11110000]
 
             // Is the name field not-NULL?
-            nullBit = nullFieldsIndicator[0] & ((unsigned) 1 << (unsigned) 7);
+            bool nullBit = nullFieldsIndicator[0] & ((unsigned) 1 << (unsigned) 7);
 
             if (!nullBit) {
                 memcpy((char *) buffer + offset, &nameLength, sizeof(int));
@@ -329,6 +324,7 @@ namespace PeterDBTesting {
             free(suffix);
         }
 
+
         // Record Descriptor for TweetMessage
         static void createRecordDescriptorForTweetMessage(std::vector<PeterDB::Attribute> &recordDescriptor) {
 
@@ -365,9 +361,9 @@ namespace PeterDBTesting {
                                                  const int referred_topicsLength, const std::string &referred_topics,
                                                  const int message_textLength, const std::string &message_text,
                                                  const int userid, const int hash_tagsLength,
-                                                 const std::string &hash_tags, void *buffer, unsigned *recordSize) {
+                                                 const std::string &hash_tags, void *buffer, size_t &recordSize) {
 
-            unsigned offset = 0;
+            size_t offset = 0;
 
             // Null-indicators
             bool nullBit;
@@ -434,7 +430,7 @@ namespace PeterDBTesting {
                 offset += hash_tagsLength;
             }
 
-            *recordSize = offset;
+            recordSize = offset;
 
         }
 
@@ -444,7 +440,7 @@ namespace PeterDBTesting {
             int offset = 0;
 
             int count = (index + 2) % 300 + 1;
-            int text = (index + 2) % 26 + 65;
+            char text = (char) ((index + 2) % 26 + 65);
             std::string suffix(count, text);
 
             // Null-indicators
@@ -463,7 +459,7 @@ namespace PeterDBTesting {
 
             // referred_topics
             std::string referred_topics = "shortcut_menu" + suffix;
-            int referred_topicsLength = referred_topics.length();
+            int referred_topicsLength = (int) referred_topics.length();
 
             memcpy((char *) buffer + offset, &referred_topicsLength, sizeof(int));
             offset += sizeof(int);
@@ -472,7 +468,7 @@ namespace PeterDBTesting {
 
             // message_text
             std::string message_text = "shortcut-menu is helpful: " + suffix;
-            int message_textLength = message_text.length();
+            int message_textLength = (int) message_text.length();
             memcpy((char *) buffer + offset, &message_textLength, sizeof(int));
             offset += sizeof(int);
             memcpy((char *) buffer + offset, message_text.c_str(), message_textLength);
@@ -485,7 +481,7 @@ namespace PeterDBTesting {
             // hash_tag
 
             std::string hash_tags_text = "#shortcut-menu" + suffix;
-            int hash_tags_textLength = hash_tags_text.length();
+            int hash_tags_textLength = (int) hash_tags_text.length();
             memcpy((char *) buffer + offset, &hash_tags_textLength, sizeof(int));
             offset += sizeof(int);
             memcpy((char *) buffer + offset, hash_tags_text.c_str(), hash_tags_textLength);
@@ -569,8 +565,8 @@ namespace PeterDBTesting {
 
         static void
         prepareLargeRecordForTwitterUser(int fieldCount, unsigned char *nullFieldsIndicator, const int index,
-                                         void *buffer, int *size) {
-            int offset = 0;
+                                         void *buffer, size_t &size) {
+            size_t offset = 0;
 
             // Null-indicators
             int nullFieldsIndicatorActualSize = getActualByteForNullsIndicator(
@@ -582,7 +578,7 @@ namespace PeterDBTesting {
             offset += nullFieldsIndicatorActualSize;
 
             int count = (index + 2) % 200 + 1;
-            int text = (index + 2) % 26 + 97;
+            char text = (char) ((index + 2) % 26 + 97);
             std::string suffix(count, text);
 
             // userid = index
@@ -597,7 +593,7 @@ namespace PeterDBTesting {
 
             // screen_name
             std::string screen_name = "MillironNila@" + suffix;
-            int screen_nameLength = screen_name.length();
+            int screen_nameLength = (int) screen_name.length();
 
             memcpy((char *) buffer + offset, &screen_nameLength, sizeof(int));
             offset += sizeof(int);
@@ -606,7 +602,7 @@ namespace PeterDBTesting {
 
             // username
             std::string username = "Milliron Nilla " + suffix;
-            int usernameLength = username.length();
+            int usernameLength = (int) username.length();
 
             memcpy((char *) buffer + offset, &usernameLength, sizeof(int));
             offset += sizeof(int);
@@ -621,14 +617,14 @@ namespace PeterDBTesting {
 
             // lang
             std::string lang = "En " + suffix;
-            int langLength = lang.length();
+            int langLength = (int) lang.length();
 
             memcpy((char *) buffer + offset, &langLength, sizeof(int));
             offset += sizeof(int);
             memcpy((char *) buffer + offset, lang.c_str(), langLength);
             offset += langLength;
 
-            *size = offset;
+            size = offset;
 
         }
 
@@ -665,7 +661,7 @@ namespace PeterDBTesting {
             int count = (index + 2) % 50 + 1;
 
             // compute the letter
-            char text = (index + 2) % 26 + 97;
+            char text = (char) ((index + 2) % 26 + 97);
 
             // Null-indicators
             int nullFieldsIndicatorActualSize = getActualByteForNullsIndicator(fieldCount);
@@ -732,7 +728,7 @@ namespace PeterDBTesting {
             int count = (index + 2) % 60 + 1;
 
             // compute the letter
-            char text = (index + 2) % 26 + 65;
+            char text = (char) ((index + 2) % 26 + 65);
 
             // Null-indicators
             int nullFieldsIndicatorActualSize = getActualByteForNullsIndicator(
@@ -813,8 +809,8 @@ namespace PeterDBTesting {
             offset += nullFieldsIndicatorActualSize;
 
             int attr_pos = 0;
-            int attr_pos_in_nth_byte = 0;
-            unsigned attr_pos_in_nth_bit_in_a_byte = 0;
+            int attr_pos_in_nth_byte;
+            unsigned attr_pos_in_nth_bit_in_a_byte;
 
             bool nullBit;
 
@@ -831,7 +827,7 @@ namespace PeterDBTesting {
                     offset += sizeof(int);
 
                     for (int j = 0; j < attr_pos; j++) {
-                        char text = (attr_pos + 3) % 26 + 65;
+                        char text = (char) ((attr_pos + 3) % 26 + 65);
                         memcpy((char *) buffer + offset, &text, 1);
                         offset += 1;
                     }
@@ -861,7 +857,7 @@ namespace PeterDBTesting {
 
                 if (!nullBit) {
                     // compute the floating number
-                    auto real = (float) (attr_pos + 3);
+                    auto real = (float) (attr_pos + 3.001);
                     memcpy((char *) buffer + offset, &real, sizeof(float));
                     offset += sizeof(float);
                 }
@@ -872,36 +868,27 @@ namespace PeterDBTesting {
         }
 
         static void createLargeRecordDescriptor4(std::vector<PeterDB::Attribute> &recordDescriptor) {
-            int index = 0;
-            char *suffix = (char *) malloc(10);
             PeterDB::Attribute attr;
-            sprintf(suffix, "%d", index);
-            attr.name = "attr";
-            attr.name += suffix;
+            attr.name = "attr0";
             attr.type = PeterDB::TypeVarChar;
             attr.length = (PeterDB::AttrLength) 2200;
             recordDescriptor.push_back(attr);
-            index++;
 
-            sprintf(suffix, "%d", index);
-            attr.name = "attr";
-            attr.name += suffix;
+            attr.name = "attr1";
             attr.type = PeterDB::TypeInt;
             attr.length = (PeterDB::AttrLength) 4;
             recordDescriptor.push_back(attr);
-
-            free(suffix);
         }
 
         static void prepareLargeRecord4(int fieldCount, unsigned char *nullFieldsIndicator,
-                                        const int index, void *buffer, unsigned *size) {
-            int offset = 0;
+                                        const int index, void *buffer, size_t &size) {
+            size_t offset = 0;
 
             // compute the count
             int count = index % 2200 + 1;
 
             // compute the letter
-            char text = (index + 2) % 26 + 65;
+            char text = (char) ((index + 2) % 26 + 65);
 
             // Null-indicators
             int nullFieldsIndicatorActualSize = getActualByteForNullsIndicator(
@@ -925,28 +912,48 @@ namespace PeterDBTesting {
             memcpy((char *) buffer + offset, &index, sizeof(int));
             offset += sizeof(int);
 
-            *size = offset;
+            size = offset;
         }
 
-        static void getByteOffset(unsigned pos, unsigned &bytes, unsigned &offset) {
-            bytes = pos / 8;
+    };
 
-            offset = 7 - pos % 8;
-        }
+    class RBFM_Test_2 : public RBFM_Test {
 
-        static void setBit(char &src, bool value, unsigned offset) {
-            if (value) {
-                src |= (unsigned) 1 << offset;
-            } else {
-                src &= ~((unsigned) 1 << offset);
+    protected:
+        bool destroyFile = true;
+
+    public:
+        void SetUp() override {
+
+            fileName = "rbfm_test_file_2";
+
+            if (!fileExists(fileName)) {
+                // Create a file
+                ASSERT_EQ(rbfm.createFile(fileName), success) << "Creating the file should not fail: " << fileName;
+                ASSERT_TRUE(fileExists(fileName)) << "The file is not found: " << fileName;
             }
+
+            // Open the file
+            ASSERT_EQ(rbfm.openFile(fileName, fileHandle), success) << "Opening the file should not fail: " << fileName;
+
         }
 
-        static void setAttrNull(void *src, ushort attrNum, bool isNull) {
-            unsigned bytes = 0;
-            unsigned pos = 0;
-            getByteOffset(attrNum, bytes, pos);
-            setBit(*((char *) src + bytes), isNull, pos);
+        void TearDown() override {
+            // Destruct the buffers
+            free(inBuffer);
+            free(outBuffer);
+            free(nullsIndicator);
+
+            // Close the file
+            ASSERT_EQ(rbfm.closeFile(fileHandle), success) << "Closing the file should not fail.";
+
+            if (destroyFile) {
+                // Destroy the file
+                ASSERT_EQ(rbfm.destroyFile(fileName), success) << "Destroying the file should not fail.";
+
+                remove("rids_file");
+                remove("sizes_file");
+            }
         }
 
     };

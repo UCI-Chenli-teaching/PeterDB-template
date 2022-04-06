@@ -259,17 +259,58 @@ namespace PeterDBTesting {
 
         }
 
-        void prepareGroupTable(unsigned char *nullAttributesIndicator, const unsigned &seed, void *buf) {
-            // Prepare the tuple data for insertion
-            unsigned a = seed % 5 + 1;
-            unsigned b = seed % 5 + 1;
-            auto c = (float) seed + 50.3;
+        void prepareRightVarCharTuple(unsigned char *nullAttributesIndicator, const unsigned &seed, void *buf) {
+            float c = seed + 28.2f;
+
+            unsigned length = (seed % 26) + 1;
+            std::string b = std::string(length, '\0');
+            for (int j = 0; j < length; j++) {
+                b[j] = 96 + length;
+            }
 
             int offset = 0;
 
             // Null-indicators
             bool nullBit;
-            int nullAttributesIndicatorActualSize = getActualByteForNullsIndicator(attrsMap["left"].size());
+            int nullAttributesIndicatorActualSize = getActualByteForNullsIndicator(attrsMap["rightvarchar"].size());
+
+            // Null-indicator for the fields
+            memcpy((char *) buf + offset, nullAttributesIndicator, nullAttributesIndicatorActualSize);
+            offset += nullAttributesIndicatorActualSize;
+
+            // Beginning of the actual data
+            // Note that the left-most bit represents the first field. Thus, the offset is 7 from right, not 0.
+            // e.g., if a tuple consists of four attributes and they are all nulls, then the bit representation will be: [11110000]
+
+            // Is the B field not-NULL?
+            nullBit = nullAttributesIndicator[0] & (1u << 7u);
+            if (!nullBit) {
+                memcpy((char *) buf + offset, &length, sizeof(unsigned));
+                offset += sizeof(unsigned);
+                memcpy((char *) buf + offset, b.c_str(), length);
+                offset += length;
+            }
+
+            // Is the C field not-NULL?
+            nullBit = nullAttributesIndicator[0] & (1u << 6u);
+            if (!nullBit) {
+                memcpy((char *) buf + offset, &c, sizeof(float));
+                offset += sizeof(float);
+            }
+
+        }
+
+        void prepareGroupTable(unsigned char *nullAttributesIndicator, const unsigned &seed, void *buf) {
+            // Prepare the tuple data for insertion
+            unsigned a = seed % 5 + 1;
+            unsigned b = seed % 5 + 1;
+            float c = seed + 50.3;
+
+            int offset = 0;
+
+            // Null-indicators
+            bool nullBit;
+            int nullAttributesIndicatorActualSize = getActualByteForNullsIndicator(attrsMap["group"].size());
 
             // Null-indicator for the fields
             memcpy((char *) buf + offset, nullAttributesIndicator, nullAttributesIndicatorActualSize);
@@ -322,16 +363,17 @@ namespace PeterDBTesting {
                     prepareRightTuple(nullsIndicator, i, inBuffer);
                 else if (tableName == "leftvarchar")
                     prepareLeftVarCharTuple(nullsIndicator, i, inBuffer);
+                else if (tableName == "rightvarchar")
+                    prepareRightVarCharTuple(nullsIndicator, i, inBuffer);
                 else if (tableName == "group")
                     prepareGroupTable(nullsIndicator, i, inBuffer);
 
                 ASSERT_EQ(rm.insertTuple(tableName, inBuffer, rid), success)
                                             << "relationManager.insertTuple() should succeed.";
+                rids.emplace_back(rid);
             }
         }
     };
 
 }; // PeterDBTesting
 #endif
-
-

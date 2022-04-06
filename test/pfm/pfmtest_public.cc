@@ -58,14 +58,14 @@ namespace PeterDBTesting {
         // Create a file
         ASSERT_EQ(pfm.createFile(fileName), success) << "Creating the file should succeed: " << fileName;
         ASSERT_TRUE(fileExists(fileName)) << "The file is not found: " << fileName;
-        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File should be based on PAGE_SIZE.";
+        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
 
         // Open the file
         PeterDB::FileHandle fileHandle;
         ASSERT_EQ(pfm.openFile(fileName, fileHandle), success)
                                     << "Opening the file should succeed: " << fileName;
 
-        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File should be based on PAGE_SIZE.";
+        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
 
         // Close the file
         ASSERT_EQ(pfm.closeFile(fileHandle), success) << "Closing the file should succeed.";
@@ -82,7 +82,7 @@ namespace PeterDBTesting {
 
         ASSERT_TRUE(fileExists(fileName)) << "The file should exist now: " << fileName;
 
-        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File should be based on PAGE_SIZE.";
+        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
 
         // Get the number of pages in the test file. In this case, it should be zero.
         ASSERT_EQ(fileHandle.getNumberOfPages(), 0) << "The page count should be zero at this moment.";
@@ -118,7 +118,7 @@ namespace PeterDBTesting {
         generateData(inBuffer, PAGE_SIZE);
         ASSERT_EQ(fileHandle.appendPage(inBuffer), success) << "Appending a page should succeed.";
 
-        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File should be based on PAGE_SIZE.";
+        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
         ASSERT_GT(getFileSize(fileName), fileSizeBeforeAppend) << "File size should have been increased";
 
         // Collect after counters
@@ -132,7 +132,7 @@ namespace PeterDBTesting {
         ASSERT_EQ(fileHandle.getNumberOfPages(), 1) << "The count should be one at this moment.";
 
         reopenFile();
-        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File should be based on PAGE_SIZE.";
+        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
 
         // Reset counters
         readPageCount = updatedReadPageCount, writePageCount = updatedWritePageCount, appendPageCount = updatedAppendPageCount;
@@ -153,6 +153,7 @@ namespace PeterDBTesting {
         ASSERT_LT(readPageCount, updatedReadPageCount) << "The readPageCount should have been increased.";
 
         // Check the integrity of the page
+        free(inBuffer);
         inBuffer = malloc(PAGE_SIZE);
         generateData(inBuffer, PAGE_SIZE);
         ASSERT_EQ(memcmp(inBuffer, outBuffer, PAGE_SIZE), 0)
@@ -185,7 +186,7 @@ namespace PeterDBTesting {
         inBuffer = malloc(PAGE_SIZE);
         generateData(inBuffer, PAGE_SIZE);
         ASSERT_EQ(fileHandle.appendPage(inBuffer), success) << "Appending a page should succeed.";
-        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File should be based on PAGE_SIZE.";
+        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
         ASSERT_GT(getFileSize(fileName), fileSizeBeforeAppend) << "File size should have been increased";
 
         // Collect before counters
@@ -194,14 +195,15 @@ namespace PeterDBTesting {
 
         // Update and write the first page
         size_t fileSizeBeforeWrite = getFileSize(fileName);
+        free(inBuffer);
         inBuffer = malloc(PAGE_SIZE);
         generateData(inBuffer, PAGE_SIZE, 10);
         ASSERT_EQ(fileHandle.writePage(0, inBuffer), success) << "Writing a page should succeed.";
-        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File should be based on PAGE_SIZE.";
+        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
         ASSERT_EQ(getFileSize(fileName), fileSizeBeforeWrite) << "File size should not have been increased";
 
         reopenFile();
-        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File should be based on PAGE_SIZE.";
+        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
 
         // Read the page
         outBuffer = malloc(PAGE_SIZE);
@@ -235,7 +237,7 @@ namespace PeterDBTesting {
         // 11. Close File
         // 12. Destroy File
 
-        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File should be based on PAGE_SIZE.";
+        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
 
         unsigned readPageCount = 0, writePageCount = 0, appendPageCount = 0;
         unsigned updatedReadPageCount = 0, updatedWritePageCount = 0, updatedAppendPageCount = 0;
@@ -250,7 +252,7 @@ namespace PeterDBTesting {
         for (unsigned j = 0; j < 100; j++) {
             generateData(inBuffer, PAGE_SIZE, j + 1);
             ASSERT_EQ(fileHandle.appendPage(inBuffer), success) << "Appending a page should succeed.";
-            ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File should be based on PAGE_SIZE.";
+            ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
             ASSERT_GT(getFileSize(fileName), fileSizeBeforeAppend) << "File size should have been increased";
             fileSizeBeforeAppend = getFileSize(fileName);
         }
@@ -263,7 +265,7 @@ namespace PeterDBTesting {
         ASSERT_LT(appendPageCount, updatedAppendPageCount) << "The appendPageCount should have been increased.";
 
         reopenFile();
-        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File should be based on PAGE_SIZE.";
+        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
 
         // Get the number of pages
         ASSERT_EQ(fileHandle.getNumberOfPages(), 100) << "The count should be 100 at this moment.";
@@ -276,7 +278,7 @@ namespace PeterDBTesting {
                                       outBuffer), success) << "Reading a page should succeed.";
 
         reopenFile();
-        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File should be based on PAGE_SIZE.";
+        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
 
         generateData(inBuffer, PAGE_SIZE, pageNumForCheck);
         ASSERT_EQ(memcmp(outBuffer, inBuffer, PAGE_SIZE), 0) << "Checking the integrity of a page should succeed.";
@@ -285,10 +287,10 @@ namespace PeterDBTesting {
         generateData(inBuffer, PAGE_SIZE, 60);
         ASSERT_EQ(fileHandle.writePage(pageNumForCheck - 1, inBuffer), success) << "Writing a page should succeed.";
 
-        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File should be based on PAGE_SIZE.";
+        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
 
         reopenFile();
-        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File should be based on PAGE_SIZE.";
+        ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
 
         // Read the 86th page and check integrity
         ASSERT_EQ(fileHandle.readPage(pageNumForCheck - 1, outBuffer), success) << "Reading a page should succeed.";
@@ -296,4 +298,66 @@ namespace PeterDBTesting {
         ASSERT_EQ(memcmp(inBuffer, outBuffer, PAGE_SIZE), 0) << "Checking the integrity of a page should succeed.";
 
     }
+
+    TEST_F (PFM_Page_Test_2, check_page_num_after_appending) {
+        // Test case procedure:
+        // 1. Append 39 Pages
+        // 2. Check Page Number after each append
+        // 3. Keep the file for the next test case
+
+        size_t currentFileSize = getFileSize(fileName);
+        inBuffer = malloc(PAGE_SIZE);
+        int numPages = 39;
+        for (int i = 1; i <= numPages; i++) {
+            generateData(inBuffer, PAGE_SIZE, 53 + i, 47 - i);
+            ASSERT_EQ(fileHandle.appendPage(inBuffer), success) << "Appending a page should succeed.";
+            ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
+            ASSERT_GT(getFileSize(fileName), currentFileSize) << "File size should have been increased";
+            currentFileSize = getFileSize(fileName);
+            ASSERT_EQ(fileHandle.getNumberOfPages(), i)
+                                        << "The page count should be " << i << " at this moment";
+        }
+        destroyFile = false;
+
+    }
+
+    TEST_F (PFM_Page_Test_2, check_page_num_after_writing) {
+        // Test case procedure:
+        // 1. Overwrite the 39 Pages from the previous test case
+        // 2. Check Page Number after each write
+        // 3. Keep the file for the next test case
+
+        inBuffer = malloc(PAGE_SIZE);
+        int numPages = 39;
+        size_t fileSizeAfterAppend = getFileSize(fileName);
+        for (int i = 0; i < numPages; i++) {
+            generateData(inBuffer, PAGE_SIZE, 47 + i, 53 - i);
+            ASSERT_EQ(fileHandle.writePage(i, inBuffer), success) << "Writing a page should succeed.";
+            ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
+            ASSERT_EQ(getFileSize(fileName), fileSizeAfterAppend) << "File size should not have been increased";
+            ASSERT_EQ(fileHandle.getNumberOfPages(), numPages) << "The page count should not have been increased";
+        }
+        destroyFile = false;
+    }
+
+    TEST_F (PFM_Page_Test_2, check_page_num_after_reading) {
+        // Test case procedure:
+        // 1. Read the 39 Pages from the previous test case
+        // 2. Check Page Number after each read
+
+        inBuffer = malloc(PAGE_SIZE);
+        outBuffer = malloc(PAGE_SIZE);
+        int numPages = 39;
+        size_t fileSizeAfterAppend = getFileSize(fileName);
+        for (int i = 0; i < numPages; i++) {
+            generateData(inBuffer, PAGE_SIZE, 47 + i, 53 - i);
+            ASSERT_EQ(fileHandle.readPage(i, outBuffer), success) << "Reading a page should succeed.";
+            ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
+            ASSERT_EQ(fileHandle.getNumberOfPages(), numPages) << "The page count should not have been increased.";
+            ASSERT_EQ(getFileSize(fileName), fileSizeAfterAppend) << "File size should not have been increased.";
+            ASSERT_EQ(memcmp(inBuffer, outBuffer, PAGE_SIZE), 0)
+                                        << "Checking the integrity of the page should succeed.";
+        }
+    }
+
 } // namespace PeterDBTesting

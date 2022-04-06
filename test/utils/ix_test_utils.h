@@ -166,6 +166,7 @@ namespace PeterDBTesting {
         unsigned rc, wc, ac, rcAfter, wcAfter, acAfter;
         PeterDB::IX_ScanIterator ix_ScanIterator;
         bool destroyFile = true;
+        bool closeFile = true;
         std::vector<PeterDB::RID> rids;
 
     public:
@@ -180,9 +181,10 @@ namespace PeterDBTesting {
 
         void TearDown() override {
 
-            // close index file
-            ASSERT_EQ(ix.closeFile(ixFileHandle), success) << "indexManager::closeFile() should succeed.";
-
+            if (closeFile) {
+                // close index file
+                ASSERT_EQ(ix.closeFile(ixFileHandle), success) << "indexManager::closeFile() should succeed.";
+            }
             if (destroyFile) {
                 // destroy index file
                 ASSERT_EQ(ix.destroyFile(indexFileName), success) << "indexManager::destroyFile() should succeed.";
@@ -193,31 +195,31 @@ namespace PeterDBTesting {
             // close index file
             ASSERT_EQ(ix.closeFile(ixFileHandle), success) << "indexManager::closeFile() should succeed.";
 
-            ixFileHandle = PeterDB::IXFileHandle();
+//            ixFileHandle = PeterDB::IXFileHandle();
             // open index file
             ASSERT_EQ(ix.openFile(indexFileName, ixFileHandle), success) << "indexManager::openFile() should succeed.";
         }
 
         template<typename T>
         void generateAndInsertEntries(unsigned int numOfTuples, const PeterDB::Attribute &attr, T seed = 0,
-                                      T salt = 2, T fixedKey = NULL) {
+                                      T salt = 2, T fixedKey = 0) {
 
             for (unsigned i = 0; i < numOfTuples; i++) {
                 T value = i + seed;
                 rid.pageNum = (unsigned) (value * salt + seed) % INT_MAX;
                 rid.slotNum = (unsigned) (value * salt * seed + seed) % SHRT_MAX;
                 rids.emplace_back(rid);
-                T key = fixedKey == NULL ? value : fixedKey;
+                T key = fixedKey == 0 ? value : fixedKey;
                 ASSERT_EQ(ix.insertEntry(ixFileHandle, attr, &key, rid), success)
                                             << "indexManager::insertEntry() should succeed.";
             }
         }
 
-        static void prepareKeyAndRid(const unsigned seed, char *key, PeterDB::RID &rid, unsigned fixedLength = NULL) {
-            unsigned length = (fixedLength == NULL ? seed : fixedLength) % 1000;
+        static void prepareKeyAndRid(const unsigned seed, char *key, PeterDB::RID &rid, unsigned fixedLength = 0) {
+            unsigned length = (fixedLength == 0 ? seed : fixedLength) % 1000;
             *(unsigned *) key = length;
             for (int i = 0; i < length; i++) {
-                key[4 + i] = 'a' + seed % 26;
+                key[4 + i] = (char) ('a' + seed % 26);
             }
             rid.pageNum = seed;
             rid.slotNum = seed;
@@ -279,6 +281,47 @@ namespace PeterDBTesting {
             EXPECT_NE(target, ridsForCheck.end()) << "RID is not from inserted.";
             ridsForCheck.erase(target);
             EXPECT_EQ(key, expected) << "key does not match.";
+        }
+
+    };
+
+    class IX_Test_2 : public IX_Test {
+    protected:
+        PeterDB::IXFileHandle ixFileHandle2;
+        std::string indexFileName2 = "ix_test_index_file_2";
+        PeterDB::RID rid2;
+        unsigned rc2, wc2, ac2, rcAfter2, wcAfter2, acAfter2;
+        PeterDB::IX_ScanIterator ix_ScanIterator2;
+        std::vector<PeterDB::RID> rids2;
+
+        PeterDB::Attribute shortEmpNameAttr{"short_emp_name", PeterDB::TypeVarChar, 20};
+        PeterDB::Attribute longEmpNameAttr{"long_emp_name", PeterDB::TypeVarChar, 100};
+
+    public:
+        void SetUp() override {
+            remove(indexFileName.c_str());
+            remove(indexFileName2.c_str());
+
+            // create index file
+            ASSERT_EQ(ix.createFile(indexFileName), success) << "indexManager::createFile() should success";
+            ASSERT_EQ(ix.createFile(indexFileName2), success) << "indexManager::createFile() should success";
+
+            // open index file
+            ASSERT_EQ(ix.openFile(indexFileName, ixFileHandle), success) << "indexManager::openFile() should succeed.";
+            ASSERT_EQ(ix.openFile(indexFileName2, ixFileHandle2), success) << "indexManager::openFile() should succeed.";
+        }
+
+        void TearDown() override {
+            if (closeFile) {
+                // close index file
+                ASSERT_EQ(ix.closeFile(ixFileHandle), success) << "indexManager::closeFile() should succeed.";
+                ASSERT_EQ(ix.closeFile(ixFileHandle2), success) << "indexManager::closeFile() should succeed.";
+            }
+            if (destroyFile) {
+                // destroy index file
+                ASSERT_EQ(ix.destroyFile(indexFileName), success) << "indexManager::destroyFile() should succeed.";
+                ASSERT_EQ(ix.destroyFile(indexFileName2), success) << "indexManager::destroyFile() should succeed.";
+            }
         }
 
     };

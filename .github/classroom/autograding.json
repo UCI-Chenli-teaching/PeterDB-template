@@ -1,0 +1,1104 @@
+{
+  "tests": [
+    {
+      "name": "setup",
+      "setup": "",
+      "run": "mkdir -p cmake-build-debug; cd cmake-build-debug; cmake ../ && CTEST_OUTPUT_ON_FAILURE=1 cmake --build . -j 9",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 0
+    },
+    {
+      "name": "PFM_File_Test.create_file",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^PFM_File_Test.create_file$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 1
+    },
+    {
+      "name": "PFM_File_Test.create_existing_file",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^PFM_File_Test.create_existing_file$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2
+    },
+    {
+      "name": "PFM_File_Test.destroy_file",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^PFM_File_Test.destroy_file$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "PFM_File_Test.destroy_nonexistent_file",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^PFM_File_Test.destroy_nonexistent_file$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "PFM_File_Test.open_and_close_file",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^PFM_File_Test.open_and_close_file$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "PFM_Page_Test.get_page_numbers",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^PFM_Page_Test.get_page_numbers$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "PFM_Page_Test.read_nonexistent_page",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^PFM_Page_Test.read_nonexistent_page$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "PFM_Page_Test.append_and_read_pages",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^PFM_Page_Test.append_and_read_pages$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "PFM_Page_Test.write_nonexistent_page",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^PFM_Page_Test.write_nonexistent_page$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "PFM_Page_Test.write_and_read_pages",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^PFM_Page_Test.write_and_read_pages$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "PFM_Page_Test.append_and_write_and_read_pages",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^PFM_Page_Test.append_and_write_and_read_pages$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "RBFM_Test.insert_and_read_a_record",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test.insert_and_read_a_record$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 5
+    },
+    {
+      "name": "RBFM_Test.insert_and_read_a_record_with_null",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test.insert_and_read_a_record_with_null$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 5
+    },
+    {
+      "name": "RBFM_Test.insert_and_read_multiple_records",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test.insert_and_read_multiple_records$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 5
+    },
+    {
+      "name": "RBFM_Test.insert_and_read_massive_records",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test.insert_and_read_massive_records$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 5,
+      "points": 5
+    },
+    {
+      "name": "PFM_Test_2.check_page_num_after_appending",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^PFM_Test_2.check_page_num_after_appending$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "PFM_Test_2.check_page_num_after_writing",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^PFM_Test_2.check_page_num_after_writing$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "PFM_Test_2.check_page_num_after_reading",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^PFM_Test_2.check_page_num_after_reading$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "RBFM_Test_2.varchar_compact_size",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test_2.varchar_compact_size$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 5,
+      "points": 3
+    },
+    {
+      "name": "RBFM_Test_2.insert_records_with_empty_and_null_varchar",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test_2.insert_records_with_empty_and_null_varchar$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2
+    },
+    {
+      "name": "RBFM_Test_2.insert_records_with_all_nulls",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test_2.insert_records_with_all_nulls$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2
+    },
+    {
+      "name": "RBFM_Test_2.read_records_with_all_nulls",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test_2.read_records_with_all_nulls$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2
+    },
+    {
+      "name": "RBFM_Test_2.insert_records_with_selected_nulls",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test_2.insert_records_with_selected_nulls$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2
+    },
+    {
+      "name": "RBFM_Test_2.read_records_with_selected_nulls",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test_2.read_records_with_selected_nulls$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2
+    },
+    {
+      "name": "RBFM_Test_2.insert_large_records",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test_2.insert_large_records$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "RBFM_Test_2.read_large_records",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test_2.read_large_records$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "RBFM_Test_2.insert_to_trigger_fill_lookup_and_append",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test_2.insert_to_trigger_fill_lookup_and_append$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 4
+    },
+    {
+      "name": "RBFM_Test_2.insert_massive_records",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test_2.insert_massive_records$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 15,
+      "points": 4
+    },
+    {
+      "name": "RBFM_Test_2.read_massive_records",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test_2.read_massive_records$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 15,
+      "points": 4
+    },
+    {
+      "name": "RBFM_Test.delete_records",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test.delete_records$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RBFM_Test.update_records",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RBFM_Test.update_records$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Catalog_Test.create_and_delete_tables",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Catalog_Test.create_and_delete_tables$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Tuple_Test.get_attributes",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Tuple_Test.get_attributes$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Tuple_Test.insert_and_read_tuple",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Tuple_Test.insert_and_read_tuple$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Tuple_Test.insert_and_delete_and_read_tuple",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Tuple_Test.insert_and_delete_and_read_tuple$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Tuple_Test.insert_and_update_and_read_tuple",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Tuple_Test.insert_and_update_and_read_tuple$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Tuple_Test.read_attribute",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Tuple_Test.read_attribute$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Tuple_Test.delete_table",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Tuple_Test.delete_table$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Scan_Test.simple_scan",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Scan_Test.simple_scan$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Scan_Test.simple_scan_after_table_deletion",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Scan_Test.simple_scan_after_table_deletion$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Large_Table_Test.insert_large_tuples",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Large_Table_Test.insert_large_tuples$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 2,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Large_Table_Test.read_large_tuples",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Large_Table_Test.read_large_tuples $",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 2,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Large_Table_Test.update_and_read_large_tuples",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Large_Table_Test.update_and_read_large_tuples$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 2,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Large_Table_Test.delete_and_read_large_tuples",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Large_Table_Test.delete_and_read_large_tuples$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 2,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Large_Table_Test.scan_large_tuples",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Large_Table_Test.scan_large_tuples$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 2,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Scan_Test.conditional_scan",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Scan_Test.conditional_scan $",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Scan_Test.conditional_scan_with_null",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Scan_Test.conditional_scan_with_null$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Catalog_Scan_Test.catalog_tables_table_check",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Catalog_Scan_Test.catalog_tables_table_check$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Catalog_Scan_Test.catalog_columns_table_check",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Catalog_Scan_Test.catalog_columns_table_check$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Catalog_Scan_Test_2.read_attributes",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Catalog_Scan_Test_2.read_attributes$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 15,
+      "points": 7
+    },
+    {
+      "name": "RM_Catalog_Scan_Test_2.scan",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Catalog_Scan_Test_2.scan$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 15,
+      "points": 7
+    },
+    {
+      "name": "RM_Catalog_Scan_Test_2.scan_with_null",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Catalog_Scan_Test_2.scan_with_null$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 15,
+      "points": 7
+    },
+    {
+      "name": "RM_Catalog_Scan_Test_2.scan_after_update",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Catalog_Scan_Test_2.scan_after_update$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 15,
+      "points": 7
+    },
+    {
+      "name": "RM_Catalog_Scan_Test_2.scan_after_delete",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Catalog_Scan_Test_2.scan_after_delete$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 15,
+      "points": 7
+    },
+    {
+      "name": "RM_Catalog_Scan_Test_2.try_to_modify_catalog",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Catalog_Scan_Test_2.try_to_modify_catalog$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Catalog_Scan_Test_2.create_table_with_same_name",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Catalog_Scan_Test_2.create_table_with_same_name$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Version_Test.read_after_drop_attribute",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Version_Test.read_after_drop_attribute$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Version_Test.read_after_add_attribute",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Version_Test.read_after_add_attribute$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Version_Test.extra_multiple_add_drop_mix",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Version_Test.extra_multiple_add_drop_mix$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "RM_Version_Test.extra_insert_and_read_attribute",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^RM_Version_Test.extra_insert_and_read_attribute$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2.5
+    },
+    {
+      "name": "IX_File_Test.create_open_close_destory_index",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_File_Test.create_open_close_destory_index$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "IX_Test.insert_one_entry_and_print",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.insert_one_entry_and_print$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "IX_Test.insert_one_entry_and_scan",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.insert_one_entry_and_scan$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "IX_Test.insert_and_delete_one_entry",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.insert_and_delete_one_entry$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "IX_Test.scan_on_destroyed_index",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.scan_on_destroyed_index$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "IX_Test.scan_by_NO_OP",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.scan_by_NO_OP$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 5,
+      "points": 4
+    },
+    {
+      "name": "IX_Test.scan_by_GE_OP",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.scan_by_GE_OP$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 5,
+      "points": 4
+    },
+    {
+      "name": "IX_Test.scan_by_LT_OP",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.scan_by_LT_OP$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 5,
+      "points": 4
+    },
+    {
+      "name": "IX_Test.scan_by_EQ_OP",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.scan_by_EQ_OP$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 5,
+      "points": 4
+    },
+    {
+      "name": "IX_Test.scan_on_reinserted_entries",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.scan_on_reinserted_entries$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 15,
+      "points": 4
+    },
+    {
+      "name": "IX_Test.scan_to_delete_entries",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.scan_to_delete_entries$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 15,
+      "points": 4
+    },
+    {
+      "name": "IX_Test.scan_varchar_with_compact_size",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.scan_varchar_with_compact_size$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 15,
+      "points": 4
+    },
+    {
+      "name": "IX_Test.split_rotate_and_promote_on_insertion",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.split_rotate_and_promote_on_insertion$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 2,
+      "points": 4
+    },
+    {
+      "name": "IX_Test.duplicate_keys_in_one_page",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.duplicate_keys_in_one_page$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 2,
+      "points": 3
+    },
+    {
+      "name": "IX_Test_2.multiple_indexes_at_the_same_time",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test_2.multiple_indexes_at_the_same_time$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 2,
+      "points": 6
+    },
+    {
+      "name": "IX_Test_2.scan_and_delete_and_reinsert",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test_2.scan_and_delete_and_reinsert$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 5,
+      "points": 6
+    },
+    {
+      "name": "IX_Test_2.varchar_scan",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test_2.varchar_scan$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 7
+    },
+    {
+      "name": "IX_Test_2.varchar_scan_range",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test_2.varchar_scan_range$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 7
+    },
+    {
+      "name": "IX_Test_2.varchar_compact",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test_2.varchar_compact$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 7
+    },
+    {
+      "name": "IX_Test_2.duplicate_varchar_in_one_page",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test_2.duplicate_varchar_in_one_page$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 5,
+      "points": 7
+    },
+    {
+      "name": "IX_Test.extra_duplicate_keys_span_multiple_pages",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.extra_duplicate_keys_span_multiple_pages$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 5,
+      "points": 2.5
+    },
+    {
+      "name": "IX_Test.extra_merge_on_deletion",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test.extra_merge_on_deletion$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 2,
+      "points": 5
+    },
+    {
+      "name": "IX_Test_2.extra_duplicate_keys_span_multiple_pages",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test_2.extra_duplicate_keys_span_multiple_pages$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 5,
+      "points": 2.5
+    },
+    {
+      "name": "IX_Test_2.extra_merge_on_deletion",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^IX_Test_2.extra_merge_on_deletion$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 5,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.create_and_delete_table_with_index",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.create_and_delete_table_with_index$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 4
+    },
+    {
+      "name": "QE_Test.table_scan_with_int_filter",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.table_scan_with_int_filter$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 4
+    },
+    {
+      "name": "QE_Test.table_scan_with_varchar_filter",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.table_scan_with_varchar_filter$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 4
+    },
+    {
+      "name": "QE_Test.index_scan_with_real_filter",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.index_scan_with_real_filter$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 4
+    },
+    {
+      "name": "QE_Test.table_scan_with_project",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.table_scan_with_project$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 4
+    },
+    {
+      "name": "QE_Test.bnljoin",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.bnljoin$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.bnljoin_with_filter",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.bnljoin_with_filter$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.inljoin",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.inljoin$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.inljoin_with_filter_and_project",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.inljoin_with_filter_and_project$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.table_scan_with_max_aggregation",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.table_scan_with_max_aggregation$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.index_scan_with_avg_aggregation",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.index_scan_with_avg_aggregation$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.scan_with_update_and_delete",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.scan_with_update_and_delete$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.scan_with_update_to_null",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.scan_with_update_to_null$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.index_scan_with_range_real_cond_on_same_attr",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.index_scan_with_range_real_cond_on_same_attr$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 3,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.table_scan_with_range_int_cond_on_different_attr",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.table_scan_with_range_int_cond_on_different_attr$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 3,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.large_bnljoin_with_filter",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.large_bnljoin_with_filter$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 3,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.deep_bnljoin",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.deep_bnljoin$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.deep_inljoin",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.deep_inljoin$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.inljoin_bnljoin_with_project",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.inljoin_bnljoin_with_project$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 5
+    },
+    {
+      "name": "QE_Test.ghjoin_on_varchar",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.ghjoin_on_varchar$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 3,
+      "points": 2
+    },
+    {
+      "name": "QE_Test.index_scan_with_group_count_aggregation",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.index_scan_with_group_count_aggregation",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 3,
+      "points": 1
+    },
+    {
+      "name": "QE_Test.ghjoin_on_int",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.ghjoin_on_int$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 3,
+      "points": 4
+    },
+    {
+      "name": "QE_Test.ghjoin_on_real",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.ghjoin_on_real$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 3,
+      "points": 4
+    },
+    {
+      "name": "QE_Test.table_scan_with_group_min_aggregation",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.table_scan_with_group_min_aggregation$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2
+    },
+    {
+      "name": "QE_Test.table_scan_with_group_sum_aggregation",
+      "setup": "",
+      "run": "cd cmake-build-debug && CTEST_OUTPUT_ON_FAILURE=1 ctest . --no-tests=error -R ^QE_Test.table_scan_with_group_sum_aggregation$",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2
+    }
+  ]
+}

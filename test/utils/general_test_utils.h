@@ -4,8 +4,10 @@
 #include <string>
 #include <cstring>
 #include <sys/stat.h>
+#include <sys/resource.h>
 #include <sstream>
 #include <fstream>
+#include <random>
 #include <dirent.h>
 
 #include "glog/logging.h"
@@ -97,6 +99,12 @@ namespace PeterDBTesting {
         return s;
     }
 
+    static inline std::string to_lower(std::string s) {
+        std::transform(s.begin(), s.end(), s.begin(),
+                       [](unsigned char c){ return std::tolower(c); });
+        return s;
+    }
+
     static void
     convertToMap(const std::string &keyValuePairsStr, tsl::ordered_map<std::string, std::string> &outMap) {
 
@@ -106,12 +114,17 @@ namespace PeterDBTesting {
         std::string::size_type val_end;
 
         while ((key_end = keyValuePairsStr.find(':', key_pos)) != std::string::npos) {
-            if ((val_pos = keyValuePairsStr.find_first_not_of(": ", key_end)) == std::string::npos)
+            if ((val_pos = keyValuePairsStr.find_first_not_of(": ", key_end)) == std::string::npos) {
+                // Handle the case of empty string
+                outMap.emplace(trim_copy(keyValuePairsStr.substr(key_pos, key_end - key_pos)), std::string());
                 break;
+            }
 
             val_end = keyValuePairsStr.find(',', val_pos);
-            outMap.emplace(trim_copy(keyValuePairsStr.substr(key_pos, key_end - key_pos)),
-                           trim_copy(keyValuePairsStr.substr(val_pos, val_end - val_pos)));
+            // make attrName all lower case to perform case-insensitive check on attribute names
+            auto attrName = to_lower(trim_copy(keyValuePairsStr.substr(key_pos, key_end - key_pos)));
+            auto value = trim_copy(keyValuePairsStr.substr(val_pos, val_end - val_pos));
+            outMap.emplace(attrName, value);
             key_pos = val_end;
             if (key_pos != std::string::npos)
                 ++key_pos;
@@ -135,8 +148,8 @@ namespace PeterDBTesting {
 
     void checkPrintRecord(const std::string &expected, const std::string &target, bool containsMode = false,
                           const std::vector<std::string> &ignoreValues = std::vector<std::string>(),
-                          bool verbose = true) {
-        if (verbose) GTEST_LOG_(INFO) << "Target string: " << target;
+                          const bool caseInsensitive = false) {
+        GTEST_LOG_(INFO) << "Target string: " << target;
         if (std::strcmp(normalizeKVString(expected).c_str(), target.c_str()) == 0)
             return;
 
@@ -152,25 +165,30 @@ namespace PeterDBTesting {
             ASSERT_GE(targetMap.size(), expectedMap.size()) << "Fields count should be greater or equal to expected.";
         }
 
-        for (size_t i = 0; i < expectedMap.size(); i++) {
-            std::pair<std::string, std::string> targetPair = *(targetMap.begin() + i);
-            std::pair<std::string, std::string> expectedPair = *(expectedMap.begin() + i);
-            ASSERT_EQ(targetPair.first, expectedPair.first)
-                                        << "Field (" << targetPair.first
-                                        << ") is not found or not in correct order.";
+        for (const auto & expectedIter : expectedMap)
+        {
+            auto expectedKey =  expectedIter.first;
+            auto expectedValue = expectedIter.second;
 
-            if (std::find(ignoreValues.begin(), ignoreValues.end(), targetPair.first) == ignoreValues.end()) {
-                if (isFloat(targetPair.second)) {
-                    ASSERT_FLOAT_EQ(std::stof(targetPair.second), std::stof(expectedPair.second))
-                                                << "Field (" << targetPair.first
+            ASSERT_TRUE((targetMap.contains(expectedKey)))
+                                        << "Field (" << expectedKey << ") is not found.";
+
+            auto targetValue = targetMap[expectedKey];
+            if (std::find(ignoreValues.begin(), ignoreValues.end(), expectedKey) == ignoreValues.end()) {
+                if (isFloat(targetValue)) {
+                    ASSERT_FLOAT_EQ(std::stof(targetValue), std::stof(expectedValue))
+                                                << "Field (" << expectedKey
                                                 << ") value should be equal, float values are checked in a range.";
                 } else {
-                    ASSERT_EQ(targetPair.second, expectedPair.second)
-                                                << "Field (" << targetPair.first << ") value should be equal.";
+                    if (caseInsensitive) {
+                        targetValue = to_lower(targetValue);
+                        expectedValue = to_lower(expectedValue);
+                    }
+                    ASSERT_EQ(targetValue, expectedValue)
+                                                << "Field (" << expectedKey << ") value should be equal.";
                 }
             }
         }
-
     }
 
     static void getByteOffset(unsigned pos, unsigned &bytes, unsigned &offset) {
@@ -181,9 +199,9 @@ namespace PeterDBTesting {
 
     static void setBit(char &src, bool value, unsigned offset) {
         if (value) {
-            src |= (unsigned) 1 << offset;
+            src |= 1u << offset;
         } else {
-            src &= ~((unsigned) 1 << offset);
+            src &= ~(1u << offset);
         }
     }
 
@@ -196,12 +214,12 @@ namespace PeterDBTesting {
 
     // This code is required for testing to measure the memory usage of your code.
     // If you can't compile the codebase because of this function, you can safely comment this function or remove it.
-    void memProfile() {
-        int who = RUSAGE_SELF;
-        struct rusage usage{};
-        getrusage(who, &usage);
-        std::cout << usage.ru_maxrss << "KB" << std::endl;
-    }
+    // void memProfile() {
+    //     int who = RUSAGE_SELF;
+    //     struct rusage usage{};
+    //     getrusage(who, &usage);
+    //     std::cout << usage.ru_maxrss << "KB" << std::endl;
+    // }
 
     std::vector<std::string> split(std::string str, const std::string &token) {
         std::vector<std::string> result;
@@ -235,6 +253,7 @@ namespace PeterDBTesting {
         closedir(dpdf);
         return files;
     }
+
 } // namespace PeterDBTesting
 
 
