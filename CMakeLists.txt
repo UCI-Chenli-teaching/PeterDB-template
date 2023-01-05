@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 project(PeterDB)
 
 set(CMAKE_CXX_STANDARD 11)
