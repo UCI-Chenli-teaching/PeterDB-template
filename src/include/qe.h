@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <limits>
 
 #include "rm.h"
 #include "ix.h"
