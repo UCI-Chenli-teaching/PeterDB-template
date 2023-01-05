@@ -54,5 +54,4 @@ If you think some changes are really necessary, please contact us first.
 - You can add your own files (.h, .cc), or even directories under `src`, if needed. You might need to modify or add `CMakelists.txt` files under `src` directory or its child directories.
 
 - DO NOT modify anything under `test` directory: all the tests will be overwritten by the instructor's copy during grading. 
-    - public tests are released with the source code.
-    - private tests will be appended after the deadline (or grace period).
+    - Tests are released with the source code.
