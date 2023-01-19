@@ -298,4 +298,66 @@ namespace PeterDBTesting {
         ASSERT_EQ(memcmp(inBuffer, outBuffer, PAGE_SIZE), 0) << "Checking the integrity of a page should succeed.";
 
     }
+
+    TEST_F (PFM_Page_Test, check_page_num_after_appending) {
+        // Test case procedure:
+        // 1. Append 39 Pages
+        // 2. Check Page Number after each append
+        // 3. Keep the file for the next test case
+
+        size_t currentFileSize = getFileSize(fileName);
+        inBuffer = malloc(PAGE_SIZE);
+        int numPages = 39;
+        for (int i = 1; i <= numPages; i++) {
+            generateData(inBuffer, PAGE_SIZE, 53 + i, 47 - i);
+            ASSERT_EQ(fileHandle.appendPage(inBuffer), success) << "Appending a page should succeed.";
+            ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
+            ASSERT_GT(getFileSize(fileName), currentFileSize) << "File size should have been increased";
+            currentFileSize = getFileSize(fileName);
+            ASSERT_EQ(fileHandle.getNumberOfPages(), i)
+                                        << "The page count should be " << i << " at this moment";
+        }
+        destroyFile = false;
+
+    }
+
+    TEST_F (PFM_Page_Test, check_page_num_after_writing) {
+        // Test case procedure:
+        // 1. Overwrite the 39 Pages from the previous test case
+        // 2. Check Page Number after each write
+        // 3. Keep the file for the next test case
+
+        inBuffer = malloc(PAGE_SIZE);
+        int numPages = 39;
+        size_t fileSizeAfterAppend = getFileSize(fileName);
+        for (int i = 0; i < numPages; i++) {
+            generateData(inBuffer, PAGE_SIZE, 47 + i, 53 - i);
+            ASSERT_EQ(fileHandle.writePage(i, inBuffer), success) << "Writing a page should succeed.";
+            ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
+            ASSERT_EQ(getFileSize(fileName), fileSizeAfterAppend) << "File size should not have been increased";
+            ASSERT_EQ(fileHandle.getNumberOfPages(), numPages) << "The page count should not have been increased";
+        }
+        destroyFile = false;
+    }
+
+    TEST_F (PFM_Page_Test, check_page_num_after_reading) {
+        // Test case procedure:
+        // 1. Read the 39 Pages from the previous test case
+        // 2. Check Page Number after each read
+
+        inBuffer = malloc(PAGE_SIZE);
+        outBuffer = malloc(PAGE_SIZE);
+        int numPages = 39;
+        size_t fileSizeAfterAppend = getFileSize(fileName);
+        for (int i = 0; i < numPages; i++) {
+            generateData(inBuffer, PAGE_SIZE, 47 + i, 53 - i);
+            ASSERT_EQ(fileHandle.readPage(i, outBuffer), success) << "Reading a page should succeed.";
+            ASSERT_TRUE(getFileSize(fileName) % PAGE_SIZE == 0) << "File size should always be multiples of PAGE_SIZE.";
+            ASSERT_EQ(fileHandle.getNumberOfPages(), numPages) << "The page count should not have been increased.";
+            ASSERT_EQ(getFileSize(fileName), fileSizeAfterAppend) << "File size should not have been increased.";
+            ASSERT_EQ(memcmp(inBuffer, outBuffer, PAGE_SIZE), 0)
+                                        << "Checking the integrity of the page should succeed.";
+        }
+    }
+
 } // namespace PeterDBTesting
