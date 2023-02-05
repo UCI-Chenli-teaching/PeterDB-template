@@ -856,6 +856,65 @@ namespace PeterDBTesting {
 
     }
 
+    TEST_F(RBFM_Test_2, insert_large_and_small_records) {
+        // Tests free space lookup for correct implementation of page space management
+        // Functions Tested:
+        // 1. Create File - RBFM
+        // 2. Open File
+        // 3. insertRecord() - 100 big sized records to span across multiple pages with 1 record each page
+        // 4. insertRecord() - 100 small sized records that can fit into existing pages (but not only the last page)
+        // 5. There should be no new pages appended.
+        // 6. Close File
+        // 7. Destroy File
+
+        PeterDB::RID rid;
+        size_t recordSize = 0;
+        inBuffer = malloc(3000);
+        outBuffer = malloc(3000);
+
+        std::vector<PeterDB::Attribute> recordDescriptor;
+        createLargeRecordDescriptor4(recordDescriptor);
+
+        // NULL field indicator
+        nullsIndicator = initializeNullFieldsIndicator(recordDescriptor);
+
+        unsigned numLargeSmallRecords = 100;
+
+        for (int i = 0; i < numLargeSmallRecords; i++) {
+            // Insert a large record into the file
+            prepareLargeRecord4((int) recordDescriptor.size(), nullsIndicator, 2061,
+                                inBuffer, recordSize);
+
+            ASSERT_EQ(rbfm.insertRecord(fileHandle, recordDescriptor, inBuffer, rid), success)
+                                        << "Inserting a record should succeed.";
+        }
+
+
+        auto fileSize = getFileSize(fileName);
+        // check for file size, (at least 100 pages, possibly with some addition hidden pages)
+        ASSERT_TRUE(fileSize >= numLargeSmallRecords * PAGE_SIZE && fileSize <= (numLargeSmallRecords + 3) * PAGE_SIZE)
+                                    << "File Size does not match.";
+
+        auto pageCount = fileHandle.getNumberOfPages();
+        // check for page count, page count (excluding hidden pages) should be exactly 100
+        ASSERT_EQ(pageCount, numLargeSmallRecords) << "Page count does not match.";
+
+        for (int i = 0; i < numLargeSmallRecords; i++) {
+            // Insert a small record into the file
+            prepareLargeRecord4((int) recordDescriptor.size(), nullsIndicator, 200,
+                                inBuffer, recordSize);
+
+            ASSERT_EQ(rbfm.insertRecord(fileHandle, recordDescriptor, inBuffer, rid), success)
+                                        << "Inserting a record should succeed.";
+        }
+
+        pageCount = fileHandle.getNumberOfPages();
+        // check for page count, page count (excluding hidden pages) should be exactly 100
+        ASSERT_EQ(pageCount, numLargeSmallRecords) << "No new page should be appended.";
+
+        destroyFile = true;
+    }
+
     TEST_F(RBFM_Test_2, insert_massive_records) {
         // Functions Tested:
         // 1. Create File
