@@ -1539,6 +1539,7 @@ namespace PeterDBTesting {
         // 3. Drop Attributes
 
         size_t tupleSize = 0;
+        bufSize = 200;
         inBuffer = malloc(200);
         outBuffer = malloc(200);
 
