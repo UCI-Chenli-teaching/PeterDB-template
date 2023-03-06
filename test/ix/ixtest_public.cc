@@ -1388,7 +1388,7 @@ namespace PeterDBTesting {
         ASSERT_EQ(ix.printBTree(ixFileHandle, empNameAttr, stream), success)
                                     << "indexManager::printBTree() should succeed";
 
-        validateTree(stream, 12, 12, 1, 2);
+        validateTree(stream, 12, 12, 1, 1);
 
     }
 
