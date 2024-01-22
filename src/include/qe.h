@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <string>
-#include <limits>
+#include <climits>
 
 #include "rm.h"
 #include "ix.h"
