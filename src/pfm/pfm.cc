@@ -72,29 +72,26 @@ namespace PeterDB {
     }
 
     RC FileHandle::increaseCounter(CounterType counterType) {
-        // Read the existing 4 counters (16 bytes) from the file header
-        file->seekg(0, ios::beg);
+        file->seekg(0, std::ios::beg);
 
+        // Read the existing 4 counters (16 bytes) from the file header
         unsigned int counters[4];
-        file->read(reinterpret_cast<char*>(counters), PAGE_SIZE);
+        file->read(reinterpret_cast<char*>(counters), sizeof(counters));
         if (file->fail()) {
             return -1;
         }
 
-        // Increase the chosen counter by 1
-        //    (They are in the order: readPageCounter=0, writePageCounter=1,
-        //     appendPageCounter=2, numberOfPages=3)
         counters[static_cast<unsigned int>(counterType)]++;
 
         // Write the updated counters back to the file header
-        file->seekp(0, ios::beg);
-        file->write(reinterpret_cast<const char*>(counters), PAGE_SIZE);
+        file->seekp(0, std::ios::beg);
+        file->write(reinterpret_cast<const char*>(counters), sizeof(counters));
         if (file->fail()) {
             return -1;
         }
         file->flush();
 
-        // Update our in-memory variables to reflect the new values
+        // Update our in-memory counters
         readPageCounter   = counters[0];
         writePageCounter  = counters[1];
         appendPageCounter = counters[2];
@@ -111,19 +108,13 @@ namespace PeterDB {
             return -1;  // File not open
         }
 
-        // Check if pageNum is within range
-        //    Use getNumberOfPages() to get the total number of pages in the file
         unsigned totalPages = getNumberOfPages();
         if (pageNum >= totalPages) {
             return -1; // Page number out of bounds
         }
 
-        // Calculate the offset
-        //    The first 16 bytes are header, so skip that.
-        //    Then skip (pageNum * PAGE_SIZE) bytes to reach the page.
         std::streamoff offset = (1 + static_cast<std::streamoff>(pageNum)) * PAGE_SIZE;
 
-        // Seek to the correct offset for reading
         file->seekg(offset, std::ios::beg);
         if (file->fail()) {
             return -1; // Seek failed
@@ -134,13 +125,12 @@ namespace PeterDB {
             return -1; // Read failed
         }
 
-        // 6. Increment the readPageCounter
         RC rc = increaseCounter(CounterType::READ_PAGE_COUNTER);
         if (rc != 0) {
             return -1; // Could not increment the counter
         }
 
-        return 0; // Success
+        return 0;
     }
 
     RC FileHandle::writePage(PageNum pageNum, const void *data) {
@@ -149,17 +139,13 @@ namespace PeterDB {
             return -1;  // File not open
         }
 
-        // Validate that pageNum exists (i.e., it should be within the current number of pages)
         unsigned totalPages = getNumberOfPages();
         if (pageNum >= totalPages) {
             return -1; // Page number out of bounds
         }
 
-        // Calculate the correct offset:
-        //    skip the first 16 bytes (header) + pageNum * PAGE_SIZE
         std::streamoff offset = (1 + static_cast<std::streamoff>(pageNum)) * PAGE_SIZE;
 
-        // Seek to that offset for writing
         file->seekp(offset, std::ios::beg);
         if (file->fail()) {
             return -1; // Seek failed
@@ -171,13 +157,12 @@ namespace PeterDB {
         }
         file->flush();
 
-        // Increase the WRITE_PAGE_COUNTER
         RC rc = increaseCounter(CounterType::WRITE_PAGE_COUNTER);
         if (rc != 0) {
             return -1; // Could not increment the counter
         }
 
-        return 0; // Success
+        return 0;
     }
 
     RC FileHandle::appendPage(const void *data) {
@@ -187,28 +172,26 @@ namespace PeterDB {
         }
 
         file->seekp(0, ios::end); // Move to the end of the file
-        file->write(reinterpret_cast<const char*>(data), PAGE_SIZE); // Write the data
+        file->write(reinterpret_cast<const char*>(data), PAGE_SIZE);
         if (file->fail()) {
             return -1; // Return an error code if the write operation failed
         }
-        file->flush(); // Ensure the data is written to the file
+        file->flush();
 
-        increaseCounter(CounterType::APPEND_PAGE_COUNTER); // Increase the appendPageCounter
-        increaseCounter(CounterType::NUMBER_OF_PAGES); // Increase the numberOfPages
+        increaseCounter(CounterType::APPEND_PAGE_COUNTER);
+        increaseCounter(CounterType::NUMBER_OF_PAGES);
         return 0;
     }
 
     unsigned FileHandle::getNumberOfPages() {
-        // Safety checks
         if (file == nullptr || !file->is_open()) {
             return -1;
         }
 
-        // Read the existing 4 counters (16 bytes) from the file header
-        file->seekg(0, ios::beg);
+        file->seekg(0, std::ios::beg);
 
         unsigned int counters[4];
-        file->read(reinterpret_cast<char*>(counters), PAGE_SIZE);
+        file->read(reinterpret_cast<char*>(counters), sizeof(counters));
         if (file->fail()) {
             return -1;
         }
@@ -216,8 +199,20 @@ namespace PeterDB {
         return counters[static_cast<unsigned int>(CounterType::NUMBER_OF_PAGES)];
     }
 
-    RC FileHandle::collectCounterValues(unsigned &readPageCount, unsigned &writePageCount, unsigned &appendPageCount) {
-        return -1;
+
+    RC FileHandle::collectCounterValues(unsigned &readPageCount,
+                                    unsigned &writePageCount,
+                                    unsigned &appendPageCount) {
+        // safety check
+        if (file == nullptr || !file->is_open()) {
+            return -1;
+        }
+
+        readPageCount   = readPageCounter;
+        writePageCount  = writePageCounter;
+        appendPageCount = appendPageCounter;
+
+        return 0;
     }
 
 } // namespace PeterDB

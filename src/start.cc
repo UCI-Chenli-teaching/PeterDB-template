@@ -37,22 +37,23 @@ int main() {
     PeterDB::PagedFileManager &pagedFileManager = PeterDB::PagedFileManager::instance();;
     PeterDB::FileHandle &fileHandle = *(new PeterDB::FileHandle());
     const std::string fileName = "/home/ali/CLionProjects/PeterDB-template/db_files/testpage";
-    pagedFileManager.destroyFile(fileName);
-    int code = pagedFileManager.createFile(fileName);
-    cout << "createFile " + code << endl;
-    code = pagedFileManager.openFile(fileName, fileHandle);
-    char data[PAGE_SIZE] = "test string 2"; // Create a buffer with 4096 bytes of data
-    code = fileHandle.appendPage(data);
-    cout<<"code " + code<<endl;
+    // pagedFileManager.destroyFile(fileName);
+    // int code = pagedFileManager.createFile(fileName);
+    // cout << "createFile " << code << endl;
+    int code = pagedFileManager.openFile(fileName, fileHandle);
+    // char data[PAGE_SIZE] = "test string 3"; // Create a buffer with 4096 bytes of data
+    // code = fileHandle.appendPage(data);
+    // cout<<"code " << code <<endl;
     // fileHandle.writePage(0, data);
+    // cout << "writePage " << code << endl;
     // unsigned numPages = fileHandle.getNumberOfPages();
-    // char data[PAGE_SIZE];
-    // code = fileHandle.readPage(0, data);
-    // if (code != 0) {
-    //     cout << "Error reading page" << endl;
-    // } else {
-    //     cout << "Page data: " << data << endl;
-    // }
+    char data[PAGE_SIZE];
+    code = fileHandle.readPage(0, data);
+    if (code != 0) {
+        cout << "Error reading page" << endl;
+    } else {
+        cout << "Page data: " << data << endl;
+    }
 
     // cli->start();
 
