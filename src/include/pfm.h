@@ -3,6 +3,8 @@
 
 #define PAGE_SIZE 4096
 
+#include <fstream>
+#include <ios>
 #include <string>
 
 namespace PeterDB {
@@ -11,6 +13,13 @@ namespace PeterDB {
     typedef int RC;
 
     class FileHandle;
+
+    enum class CounterType {
+        READ_PAGE_COUNTER = 0,
+        WRITE_PAGE_COUNTER,
+        APPEND_PAGE_COUNTER,
+        NUMBER_OF_PAGES
+    };
 
     class PagedFileManager {
     public:
@@ -35,10 +44,13 @@ namespace PeterDB {
         unsigned readPageCounter;
         unsigned writePageCounter;
         unsigned appendPageCounter;
+        unsigned numberOfPages;
+        std::fstream *file;
 
         FileHandle();                                                       // Default constructor
         ~FileHandle();                                                      // Destructor
 
+        RC increaseCounter(CounterType counterType);                        // Increase counter
         RC readPage(PageNum pageNum, void *data);                           // Get a specific page
         RC writePage(PageNum pageNum, const void *data);                    // Write a specific page
         RC appendPage(const void *data);                                    // Append a specific page
