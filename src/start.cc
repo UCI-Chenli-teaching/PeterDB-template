@@ -34,7 +34,7 @@ int main() {
         exec("create index Age on company");
     }
 
-    PeterDB::PagedFileManager &pagedFileManager = PeterDB::PagedFileManager::instance();;
+    PeterDB::PagedFileManager &pagedFileManager = PeterDB::PagedFileManager::instance();
     PeterDB::FileHandle &fileHandle = *(new PeterDB::FileHandle());
     const std::string fileName = "/home/ali/CLionProjects/PeterDB-template/db_files/testpage";
     // pagedFileManager.destroyFile(fileName);

@@ -70,6 +70,8 @@ namespace PeterDB {
     public:
         static RecordBasedFileManager &instance();                          // Access to the singleton instance
 
+        PagedFileManager *pagedFileManager;
+
         RC createFile(const std::string &fileName);                         // Create a new record-based file
 
         RC destroyFile(const std::string &fileName);                        // Destroy a record-based file

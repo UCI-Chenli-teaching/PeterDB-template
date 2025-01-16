@@ -7,5 +7,6 @@ add_subdirectory(rm)
 add_subdirectory(qe)
 add_subdirectory(cli)
 
-add_executable(main start.cc)
+add_executable(main start.cc
+        include/rbfm_utils.h)
 target_link_libraries(main cli qe ix rm)
