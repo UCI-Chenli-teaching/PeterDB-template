@@ -184,17 +184,11 @@ namespace PeterDB {
     }
 
     unsigned FileHandle::getNumberOfPages() {
-        if (file == nullptr || !file->is_open()) {
-            return -1;
-        }
 
         file->seekg(0, std::ios::beg);
 
         unsigned int counters[4];
         file->read(reinterpret_cast<char*>(counters), sizeof(counters));
-        if (file->fail()) {
-            return -1;
-        }
 
         return counters[static_cast<unsigned int>(CounterType::NUMBER_OF_PAGES)];
     }

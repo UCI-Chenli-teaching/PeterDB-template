@@ -44,25 +44,20 @@ namespace PeterDB
         return pagedFileManager->closeFile(fileHandle);
     }
 
-    RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle,
-                                            const std::vector<Attribute> &recordDescriptor,
-                                            const void *data,
-                                            RID &rid)
+    RC RecordBasedFileManager::insertRecord(FileHandle& fileHandle,
+                                            const std::vector<Attribute>& recordDescriptor,
+                                            const void* data,
+                                            RID& rid)
     {
         unsigned recordSize = computeRecordSize(recordDescriptor, data);
-
-        // Find a page that can accommodate recordSize + 4 (for new slot)
         unsigned totalPages = fileHandle.getNumberOfPages();
-        if (totalPages == (unsigned) -1) {
-            // error getting #pages
-            return -1;
-        }
 
-        // If file is empty, create the first page
-        if (totalPages == 0) {
+        if (totalPages == 0)
+        {
             char newPage[PAGE_SIZE];
             initNewPage(newPage);
-            if (fileHandle.appendPage(newPage) != 0) {
+            if (fileHandle.appendPage(newPage) != 0)
+            {
                 return -1;
             }
             totalPages = fileHandle.getNumberOfPages(); // now 1
@@ -70,76 +65,103 @@ namespace PeterDB
 
         int targetPage = -1;
 
-        // (A) First try the last page
         {
             char pageBuf[PAGE_SIZE];
-            if (fileHandle.readPage(totalPages - 1, pageBuf) != 0) {
+            if (fileHandle.readPage(totalPages - 1, pageBuf) != 0)
+            {
                 return -1;
             }
-            if (canPageHoldRecord(pageBuf, recordSize)) {
-                targetPage = (int) (totalPages - 1);
+            if (canPageHoldRecord(pageBuf, recordSize))
+            {
+                targetPage = static_cast<int>(totalPages - 1);
             }
         }
 
-        // (B) If last page can't hold, scan from page 0..(last-2)
-        if (targetPage < 0 && totalPages > 1) {
-            for (unsigned p = 0; p < totalPages - 1; p++) {
+        if (targetPage < 0 && totalPages > 1)
+        {
+            for (unsigned p = 0; p < totalPages - 1; p++)
+            {
                 char pageBuf[PAGE_SIZE];
-                if (fileHandle.readPage(p, pageBuf) != 0) {
+                if (fileHandle.readPage(p, pageBuf) != 0)
+                {
                     return -1;
                 }
-                if (canPageHoldRecord(pageBuf, recordSize)) {
-                    targetPage = p;
+                if (canPageHoldRecord(pageBuf, recordSize))
+                {
+                    targetPage = static_cast<int>(p);
                     break;
                 }
             }
         }
 
-        // (C) If still no page found, append a new empty page
-        if (targetPage < 0) {
+        if (targetPage < 0)
+        {
             char newPage[PAGE_SIZE];
             initNewPage(newPage);
-            if (fileHandle.appendPage(newPage) != 0) {
+            if (fileHandle.appendPage(newPage) != 0)
+            {
                 return -1;
             }
-            // newly appended page index
-            targetPage = (int) fileHandle.getNumberOfPages() - 1;
+            targetPage = static_cast<int>(fileHandle.getNumberOfPages() - 1);
         }
 
-        // Read the chosen page
         char pageData[PAGE_SIZE];
-        if (fileHandle.readPage((unsigned)targetPage, pageData) != 0) {
+        if (fileHandle.readPage(static_cast<unsigned>(targetPage), pageData) != 0)
+        {
             return -1;
         }
 
+        unsigned short numSlots = getNumSlots(pageData);
         unsigned short freeOffset = getFreeSpaceOffset(pageData);
-        unsigned short numSlots   = getNumSlots(pageData);
+
+        bool reuseEmptySlot = false;
+        unsigned short slotToUse = 0;
+
+        for (unsigned short i = 0; i < numSlots; i++)
+        {
+            unsigned short sOffset, sLength;
+            getSlotInfo(pageData, i, sOffset, sLength);
+
+            if (sLength == 0)
+            {
+                reuseEmptySlot = true;
+                slotToUse = i;
+                break;
+            }
+        }
+
+        if (!reuseEmptySlot)
+        {
+            slotToUse = numSlots;
+            setNumSlots(pageData, numSlots + 1);
+        }
 
         std::memcpy(pageData + freeOffset, data, recordSize);
+        setSlotInfo(pageData, slotToUse, freeOffset, static_cast<unsigned short>(recordSize));
+        setFreeSpaceOffset(pageData, static_cast<unsigned short>(freeOffset + recordSize));
 
-        setSlotInfo(pageData, numSlots, freeOffset, (unsigned short)recordSize);
-
-        setNumSlots(pageData, numSlots + 1);
-        setFreeSpaceOffset(pageData, freeOffset + recordSize);
-
-        if (fileHandle.writePage((unsigned)targetPage, pageData) != 0) {
+        if (fileHandle.writePage(static_cast<unsigned>(targetPage), pageData) != 0)
+        {
             return -1;
         }
 
-        rid.pageNum = (unsigned)targetPage;
-        rid.slotNum = numSlots;
+        rid.pageNum = static_cast<unsigned>(targetPage);
+        rid.slotNum = slotToUse;
 
         return 0;
     }
 
-    RC RecordBasedFileManager::readRecord(FileHandle &fileHandle,
-                                          const std::vector<Attribute> &recordDescriptor,
-                                          const RID &rid,
-                                          void *data) {
+
+    RC RecordBasedFileManager::readRecord(FileHandle& fileHandle,
+                                          const std::vector<Attribute>& recordDescriptor,
+                                          const RID& rid,
+                                          void* data)
+    {
         // Validate the pageNum
         unsigned pageNum = rid.pageNum;
         unsigned totalPages = fileHandle.getNumberOfPages();
-        if (pageNum >= totalPages || totalPages == (unsigned) -1) {
+        if (pageNum >= totalPages || totalPages == (unsigned)-1)
+        {
             // page out of range or error getting pages
             return -1;
         }
@@ -147,7 +169,8 @@ namespace PeterDB
         // Read the page into a local buffer
         char pageData[PAGE_SIZE];
         RC rc = fileHandle.readPage(pageNum, pageData);
-        if (rc != 0) {
+        if (rc != 0)
+        {
             // could not read page from disk
             return -1;
         }
@@ -155,7 +178,8 @@ namespace PeterDB
         // Validate the slotNum
         unsigned short slotNum = rid.slotNum;
         unsigned short numSlots = getNumSlots(pageData);
-        if (slotNum >= numSlots) {
+        if (slotNum >= numSlots)
+        {
             // slot out of range
             return -1;
         }
@@ -165,7 +189,8 @@ namespace PeterDB
         getSlotInfo(pageData, slotNum, offset, length);
 
         // If length == 0 means "deleted record"
-        if (length == 0) {
+        if (length == 0)
+        {
             return -1; // record was deleted
         }
 
@@ -178,7 +203,32 @@ namespace PeterDB
     RC RecordBasedFileManager::deleteRecord(FileHandle& fileHandle, const std::vector<Attribute>& recordDescriptor,
                                             const RID& rid)
     {
-        return -1;
+        char pageData[PAGE_SIZE];
+        if (fileHandle.readPage(rid.pageNum, pageData) != 0)
+        {
+            return -1;
+        }
+
+        unsigned short offset, length;
+        getSlotInfo(pageData, rid.slotNum, offset, length);
+
+        // If length == 0 => already deleted
+        if (length == 0)
+        {
+            return 0; // no action needed
+        }
+
+        shiftDataInPage(pageData, offset, length);
+
+        adjustSlotOffsets(pageData, offset, length);
+        markSlotDeleted(pageData, rid.slotNum);
+
+        if (fileHandle.writePage(rid.pageNum, pageData) != 0)
+        {
+            return -1;
+        }
+
+        return 0;
     }
 
     RC RecordBasedFileManager::printRecord(const std::vector<Attribute>& recordDescriptor, const void* data,
