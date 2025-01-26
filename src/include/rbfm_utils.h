@@ -6,6 +6,11 @@
 #include "src/include/rbfm.h"
 
 namespace PeterDB {
+    // A special marker for tombstones:
+    static const unsigned short TOMBSTONE_LENGTH = 0xFFFF;
+    // Enough bytes for storing pageNum(4) + slotNum(2)
+    static const unsigned short TOMBSTONE_SIZE   = 6;
+
     // Initialize an empty page (set freeSpaceOffset=0, numSlots=0)
     void initNewPage(void *pageData);
 
@@ -39,6 +44,15 @@ namespace PeterDB {
 
     // For each valid slot whose offset is greater than 'start', subtract 'amount' from its offset.
     void adjustSlotOffsets(void *pageData, unsigned short start, unsigned short amount);
+
+    // Check if the length indicates a tombstone
+    bool isTombstone(unsigned short length);
+
+    // Write a tombstone (the forwarding RID) into 'pageData + offset'.
+    void writeTombstone(void *pageData, unsigned short offset, const RID &newLocation);
+
+    // Read a tombstone's forwarding RID from 'pageData + offset'.
+    void readTombstone(const void *pageData, unsigned short offset, RID &dest);
 }
 
 #endif

@@ -174,4 +174,18 @@ namespace PeterDB
             }
         }
     }
+
+    bool isTombstone(unsigned short length) {
+        return (length == TOMBSTONE_LENGTH);
+    }
+
+    void writeTombstone(void *pageData, unsigned short offset, const RID &newLocation) {
+        memcpy((char*)pageData + offset, &newLocation.pageNum, sizeof(unsigned));
+        memcpy((char*)pageData + offset + sizeof(unsigned), &newLocation.slotNum, sizeof(unsigned short));
+    }
+
+    void readTombstone(const void *pageData, unsigned short offset, RID &dest) {
+        memcpy(&dest.pageNum, (char*)pageData + offset, sizeof(unsigned));
+        memcpy(&dest.slotNum, (char*)pageData + offset + sizeof(unsigned), sizeof(unsigned short));
+    }
 }

@@ -157,46 +157,32 @@ namespace PeterDB
                                           const RID& rid,
                                           void* data)
     {
-        // Validate the pageNum
-        unsigned pageNum = rid.pageNum;
-        unsigned totalPages = fileHandle.getNumberOfPages();
-        if (pageNum >= totalPages || totalPages == (unsigned)-1)
-        {
-            // page out of range or error getting pages
-            return -1;
-        }
-
-        // Read the page into a local buffer
         char pageData[PAGE_SIZE];
-        RC rc = fileHandle.readPage(pageNum, pageData);
-        if (rc != 0)
-        {
-            // could not read page from disk
-            return -1;
-        }
+        RC rc = fileHandle.readPage(rid.pageNum, pageData);
+        if (rc != 0) return -1;
 
-        // Validate the slotNum
-        unsigned short slotNum = rid.slotNum;
+        // check slot bounds
         unsigned short numSlots = getNumSlots(pageData);
-        if (slotNum >= numSlots)
-        {
-            // slot out of range
-            return -1;
-        }
+        if (rid.slotNum >= numSlots) return -1;
 
-        // Get this slot’s (offset, length)
         unsigned short offset, length;
-        getSlotInfo(pageData, slotNum, offset, length);
+        getSlotInfo(pageData, rid.slotNum, offset, length);
 
-        // If length == 0 means "deleted record"
         if (length == 0)
         {
-            return -1; // record was deleted
+            // means deleted
+            return -1;
         }
 
-        // Copy the record bytes from page into 'data'
-        //    For Project 1, we stored the record "as is", so we can just memcpy out
-        std::memcpy(data, pageData + offset, length);
+        // **If it is a tombstone, follow it**
+        if (isTombstone(length))
+        {
+            RID fwd;
+            readTombstone(pageData, offset, fwd);
+            return readRecord(fileHandle, recordDescriptor, fwd, data);
+        }
+
+        memcpy(data, pageData + offset, length);
         return 0;
     }
 
@@ -204,27 +190,44 @@ namespace PeterDB
                                             const RID& rid)
     {
         char pageData[PAGE_SIZE];
-        if (fileHandle.readPage(rid.pageNum, pageData) != 0)
-        {
+        if (fileHandle.readPage(rid.pageNum, pageData) != 0) {
+            return -1;
+        }
+
+        unsigned short numSlots = getNumSlots(pageData);
+        if (rid.slotNum >= numSlots) {
             return -1;
         }
 
         unsigned short offset, length;
         getSlotInfo(pageData, rid.slotNum, offset, length);
 
-        // If length == 0 => already deleted
-        if (length == 0)
-        {
-            return 0; // no action needed
+        if (length == 0) {
+            // Already deleted => nothing more to do
+            return 0;
         }
 
-        shiftDataInPage(pageData, offset, length);
+        if (isTombstone(length)) {
+            // It's a tombstone => read the pointer
+            RID fwd;
+            readTombstone(pageData, offset, fwd);
 
-        adjustSlotOffsets(pageData, offset, length);
-        markSlotDeleted(pageData, rid.slotNum);
+            // Recursively delete the *real* record
+            deleteRecord(fileHandle, recordDescriptor, fwd);
 
-        if (fileHandle.writePage(rid.pageNum, pageData) != 0)
-        {
+            // Now remove the tombstone (6 bytes) from this page
+            shiftDataInPage(pageData, offset, TOMBSTONE_SIZE);
+            adjustSlotOffsets(pageData, offset, TOMBSTONE_SIZE);
+            markSlotDeleted(pageData, rid.slotNum);
+        }
+        else {
+            // This slot contains an actual record => remove it
+            shiftDataInPage(pageData, offset, length);
+            adjustSlotOffsets(pageData, offset, length);
+            markSlotDeleted(pageData, rid.slotNum);
+        }
+
+        if (fileHandle.writePage(rid.pageNum, pageData) != 0) {
             return -1;
         }
 
@@ -316,7 +319,127 @@ namespace PeterDB
     RC RecordBasedFileManager::updateRecord(FileHandle& fileHandle, const std::vector<Attribute>& recordDescriptor,
                                             const void* data, const RID& rid)
     {
-        return -1;
+        char pageData[PAGE_SIZE];
+        if (fileHandle.readPage(rid.pageNum, pageData) != 0)
+        {
+            return -1;
+        }
+
+        unsigned short numSlots = getNumSlots(pageData);
+        if (rid.slotNum >= numSlots) return -1;
+
+        unsigned short oldOffset, oldLength;
+        getSlotInfo(pageData, rid.slotNum, oldOffset, oldLength);
+
+        // If slot is deleted already
+        if (oldLength == 0)
+        {
+            return -1; // or treat as "no-op"
+        }
+
+        // If it's a tombstone, follow it and update in the forwarding location
+        if (isTombstone(oldLength))
+        {
+            RID fwd;
+            readTombstone(pageData, oldOffset, fwd);
+            return updateRecord(fileHandle, recordDescriptor, data, fwd);
+        }
+
+        // compute new record size
+        unsigned newSize = computeRecordSize(recordDescriptor, data);
+
+        // === CASE 1: newSize <= oldLength ===
+        if (newSize <= oldLength)
+        {
+            memcpy(pageData + oldOffset, data, newSize);
+
+            short diff = oldLength - newSize; // this is >= 0
+            if (diff > 0)
+            {
+                // remove the 'diff' bytes from the page
+                shiftDataInPage(pageData, (unsigned short)(oldOffset + newSize), (unsigned short)diff);
+                // fix slot offsets
+                adjustSlotOffsets(pageData, (unsigned short)(oldOffset + newSize), (unsigned short)diff);
+            }
+
+            // update the slot's new length
+            setSlotInfo(pageData, rid.slotNum, oldOffset, (unsigned short)newSize);
+
+            if (fileHandle.writePage(rid.pageNum, pageData) != 0)
+            {
+                return -1;
+            }
+            return 0;
+        }
+
+        // === CASE 2: newSize > oldLength ===
+        // Easiest to do the "delete + re-insert in same slot if possible" approach:
+        // 1) Temporarily remove the old record & compact the page
+        // 2) See if the new record fits now
+        // 3) If yes, store in same slot
+        // 4) If no, create a tombstone and insert the record elsewhere
+
+        // 1) Delete + compact
+        shiftDataInPage(pageData, oldOffset, oldLength);
+        adjustSlotOffsets(pageData, oldOffset, oldLength);
+        markSlotDeleted(pageData, rid.slotNum);
+
+        // 2) Check if new record fits
+        unsigned short freeOffset = getFreeSpaceOffset(pageData);
+        unsigned short slotDirStart = PAGE_SIZE - 2 * sizeof(unsigned short) - numSlots * 4;
+        // we still have the same number of slots, but rid.slotNum is free
+        // We need newSize more bytes + 0 for a new slot (We reuse the slot, so no new slot overhead.)
+        if (freeOffset + newSize <= slotDirStart)
+        {
+            memcpy(pageData + freeOffset, data, newSize);
+            setSlotInfo(pageData, rid.slotNum, freeOffset, (unsigned short)newSize);
+            setFreeSpaceOffset(pageData, (unsigned short)(freeOffset + newSize));
+
+            if (fileHandle.writePage(rid.pageNum, pageData) != 0)
+            {
+                return -1;
+            }
+            return 0;
+        } else {
+            // not enough space -> tombstone
+            if (fileHandle.writePage(rid.pageNum, pageData) != 0)
+            {
+                return -1;
+            }
+
+            // now insert record in some other page
+            RID newLocation;
+            RC rc = insertRecord(fileHandle, recordDescriptor, data, newLocation);
+            if (rc != 0) return -1;
+
+            // re-read the old page (since we wrote it out) to store tombstone
+            if (fileHandle.readPage(rid.pageNum, pageData) != 0)
+            {
+                return -1;
+            }
+
+            // again, ensure slot is still free, then see if we have at least 6 bytes to store the tombstone
+            freeOffset = getFreeSpaceOffset(pageData);
+            if (freeOffset + TOMBSTONE_SIZE > slotDirStart)
+            {
+                // TODO: In a corner case where even 6 bytes won't fit, we might expand your approach
+                //  to move the tombstone to a new page, etc. For simplicity, return error
+                return -1;
+            }
+
+            // store tombstone data in oldOffset
+            setSlotInfo(pageData, rid.slotNum, freeOffset, TOMBSTONE_LENGTH);
+            writeTombstone(pageData, freeOffset, newLocation);
+
+            // advance free offset by 6
+            setFreeSpaceOffset(pageData, (unsigned short)(freeOffset + TOMBSTONE_SIZE));
+
+            if (fileHandle.writePage(rid.pageNum, pageData) != 0)
+            {
+                return -1;
+            }
+            return 0;
+        }
     }
 
     RC RecordBasedFileManager::readAttribute(FileHandle& fileHandle, const std::vector<Attribute>& recordDescriptor,
