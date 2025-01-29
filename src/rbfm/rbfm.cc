@@ -544,6 +544,8 @@ namespace PeterDB
             return RBFM_EOF;
         }
 
+        char recordData[PAGE_SIZE];
+
         while (currentPage < totalPages)
         {
             char pageBuf[PAGE_SIZE];
@@ -558,92 +560,45 @@ namespace PeterDB
 
             while (currentSlot < numSlots)
             {
-                unsigned short offset, length;
-                getSlotInfo(pageBuf, currentSlot, offset, length);
-
                 rid.pageNum = currentPage;
                 rid.slotNum = currentSlot;
-
                 currentSlot++;
 
-                if (length == 0)
+                RC rc = RecordBasedFileManager::instance().readRecord(
+                    *fileHandle,
+                    recordDescriptor,
+                    rid,
+                    recordData);
+
+                if (rc != 0)
                 {
                     continue;
                 }
 
-                char chasePageBuf[PAGE_SIZE];
-                memcpy(chasePageBuf, pageBuf, PAGE_SIZE);
-                RID chaseRid = rid;
-                unsigned short chaseOffset = offset;
-                unsigned short chaseLength = length;
-
-                while (isTombstone(chaseLength))
+                bool passCond = checkRecordCondition(recordData,
+                                                     PAGE_SIZE, // or you can store the exact length
+                                                     recordDescriptor,
+                                                     conditionAttribute,
+                                                     compOp,
+                                                     compValue.empty() ? nullptr : &compValue[0]);
+                if (!passCond)
                 {
-                    RID fwd;
-                    readTombstone(chasePageBuf, chaseOffset, fwd);
-
-                    if (fileHandle->readPage(fwd.pageNum, chasePageBuf) != 0)
-                    {
-                        goto skipSlot;
-                    }
-                    unsigned short fwdNumSlots = getNumSlots(chasePageBuf);
-                    if (fwd.slotNum >= fwdNumSlots)
-                    {
-                        goto skipSlot;
-                    }
-                    unsigned short fwdOffset, fwdLength;
-                    getSlotInfo(chasePageBuf, fwd.slotNum, fwdOffset, fwdLength);
-
-                    if (fwdLength == 0)
-                    {
-                        goto skipSlot;
-                    }
-
-                    chaseRid = fwd;
-                    chaseOffset = fwdOffset;
-                    chaseLength = fwdLength;
+                    continue;
                 }
 
+                RC prc = projectRecord(recordData,
+                                       PAGE_SIZE,
+                                       recordDescriptor,
+                                       attributeNames,
+                                       data);
+                if (prc != 0)
                 {
-                    if (chaseOffset + chaseLength > PAGE_SIZE)
-                    {
-                        goto skipSlot;
-                    }
-
-                    char recordData[PAGE_SIZE];
-                    memcpy(recordData, chasePageBuf + chaseOffset, chaseLength);
-
-                    bool pass = checkRecordCondition(
-                        recordData,
-                        chaseLength,
-                        recordDescriptor,
-                        conditionAttribute,
-                        compOp,
-                        compValue.empty() ? nullptr : &compValue[0]
-                    );
-                    if (!pass)
-                    {
-                        goto skipSlot;
-                    }
-
-                    if (projectRecord(recordData,
-                                      chaseLength,
-                                      recordDescriptor,
-                                      attributeNames,
-                                      data) != 0)
-                    {
-                        goto skipSlot;
-                    }
-
-                    rid = chaseRid;
-                    return 0;
+                    continue;
                 }
 
-            skipSlot:;
-                // continue to next slot
+                return 0;
             }
 
-            // Done with all slots in this page -> go to next
             currentPage++;
             currentSlot = 0;
         }
