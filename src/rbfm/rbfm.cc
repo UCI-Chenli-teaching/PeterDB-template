@@ -190,24 +190,28 @@ namespace PeterDB
                                             const RID& rid)
     {
         char pageData[PAGE_SIZE];
-        if (fileHandle.readPage(rid.pageNum, pageData) != 0) {
+        if (fileHandle.readPage(rid.pageNum, pageData) != 0)
+        {
             return -1;
         }
 
         unsigned short numSlots = getNumSlots(pageData);
-        if (rid.slotNum >= numSlots) {
+        if (rid.slotNum >= numSlots)
+        {
             return -1;
         }
 
         unsigned short offset, length;
         getSlotInfo(pageData, rid.slotNum, offset, length);
 
-        if (length == 0) {
+        if (length == 0)
+        {
             // Already deleted => nothing more to do
             return 0;
         }
 
-        if (isTombstone(length)) {
+        if (isTombstone(length))
+        {
             // It's a tombstone => read the pointer
             RID fwd;
             readTombstone(pageData, offset, fwd);
@@ -220,14 +224,16 @@ namespace PeterDB
             adjustSlotOffsets(pageData, offset, TOMBSTONE_SIZE);
             markSlotDeleted(pageData, rid.slotNum);
         }
-        else {
+        else
+        {
             // This slot contains an actual record => remove it
             shiftDataInPage(pageData, offset, length);
             adjustSlotOffsets(pageData, offset, length);
             markSlotDeleted(pageData, rid.slotNum);
         }
 
-        if (fileHandle.writePage(rid.pageNum, pageData) != 0) {
+        if (fileHandle.writePage(rid.pageNum, pageData) != 0)
+        {
             return -1;
         }
 
@@ -400,7 +406,9 @@ namespace PeterDB
                 return -1;
             }
             return 0;
-        } else {
+        }
+        else
+        {
             // not enough space -> tombstone
             if (fileHandle.writePage(rid.pageNum, pageData) != 0)
             {
@@ -445,7 +453,47 @@ namespace PeterDB
     RC RecordBasedFileManager::readAttribute(FileHandle& fileHandle, const std::vector<Attribute>& recordDescriptor,
                                              const RID& rid, const std::string& attributeName, void* data)
     {
-        return -1;
+        int attrIndex = findAttributeIndex(recordDescriptor, attributeName);
+        if (attrIndex < 0)
+        {
+            return -1;
+        }
+
+        char pageData[PAGE_SIZE];
+        if (fileHandle.readPage(rid.pageNum, pageData) != 0)
+        {
+            return -1;
+        }
+
+        unsigned short numSlots = getNumSlots(pageData);
+        if (rid.slotNum >= numSlots)
+        {
+            return -1;
+        }
+
+        unsigned short offset, length;
+        getSlotInfo(pageData, rid.slotNum, offset, length);
+
+        if (length == 0)
+        {
+            return -1;
+        }
+
+        if (isTombstone(length))
+        {
+            RID fwd;
+            readTombstone(pageData, offset, fwd);
+            return readAttribute(fileHandle, recordDescriptor, fwd, attributeName, data);
+        }
+
+        char recordBuf[PAGE_SIZE];
+        memcpy(recordBuf, pageData + offset, length);
+
+        return parseSingleAttribute(recordBuf,
+                                    (unsigned)length,
+                                    recordDescriptor,
+                                    (unsigned)attrIndex,
+                                    data);
     }
 
     RC RecordBasedFileManager::scan(FileHandle& fileHandle, const std::vector<Attribute>& recordDescriptor,
@@ -453,6 +501,161 @@ namespace PeterDB
                                     const std::vector<std::string>& attributeNames,
                                     RBFM_ScanIterator& rbfm_ScanIterator)
     {
-        return -1;
+        return rbfm_ScanIterator.init(fileHandle,
+                                      recordDescriptor,
+                                      conditionAttribute,
+                                      compOp,
+                                      value,
+                                      attributeNames);
+    }
+
+    RC RBFM_ScanIterator::init(FileHandle& fh,
+                               const std::vector<Attribute>& recordDesc,
+                               const std::string& condAttr,
+                               const CompOp op,
+                               const void* value,
+                               const std::vector<std::string>& attrNames)
+    {
+        fileHandle = &fh;
+        recordDescriptor = recordDesc;
+        conditionAttribute = condAttr;
+        compOp = op;
+        attributeNames = attrNames;
+        isOpen = true;
+
+        currentPage = 0;
+        currentSlot = 0;
+        totalPages = fileHandle->getNumberOfPages();
+
+        compValue.clear();
+        if (value != nullptr && op != NO_OP)
+        {
+            const char* bytes = (const char*)value;
+            compValue.insert(compValue.end(), bytes, bytes + PAGE_SIZE);
+        }
+
+        return 0;
+    }
+
+    RC RBFM_ScanIterator::getNextRecord(RID& rid, void* data)
+    {
+        if (!isOpen || fileHandle == nullptr)
+        {
+            return RBFM_EOF;
+        }
+
+        while (currentPage < totalPages)
+        {
+            char pageBuf[PAGE_SIZE];
+            if (fileHandle->readPage(currentPage, pageBuf) != 0)
+            {
+                currentPage++;
+                currentSlot = 0;
+                continue;
+            }
+
+            unsigned short numSlots = getNumSlots(pageBuf);
+
+            while (currentSlot < numSlots)
+            {
+                unsigned short offset, length;
+                getSlotInfo(pageBuf, currentSlot, offset, length);
+
+                rid.pageNum = currentPage;
+                rid.slotNum = currentSlot;
+
+                currentSlot++;
+
+                if (length == 0)
+                {
+                    continue;
+                }
+
+                char chasePageBuf[PAGE_SIZE];
+                memcpy(chasePageBuf, pageBuf, PAGE_SIZE);
+                RID chaseRid = rid;
+                unsigned short chaseOffset = offset;
+                unsigned short chaseLength = length;
+
+                while (isTombstone(chaseLength))
+                {
+                    RID fwd;
+                    readTombstone(chasePageBuf, chaseOffset, fwd);
+
+                    if (fileHandle->readPage(fwd.pageNum, chasePageBuf) != 0)
+                    {
+                        goto skipSlot;
+                    }
+                    unsigned short fwdNumSlots = getNumSlots(chasePageBuf);
+                    if (fwd.slotNum >= fwdNumSlots)
+                    {
+                        goto skipSlot;
+                    }
+                    unsigned short fwdOffset, fwdLength;
+                    getSlotInfo(chasePageBuf, fwd.slotNum, fwdOffset, fwdLength);
+
+                    if (fwdLength == 0)
+                    {
+                        goto skipSlot;
+                    }
+
+                    chaseRid = fwd;
+                    chaseOffset = fwdOffset;
+                    chaseLength = fwdLength;
+                }
+
+                {
+                    if (chaseOffset + chaseLength > PAGE_SIZE)
+                    {
+                        goto skipSlot;
+                    }
+
+                    char recordData[PAGE_SIZE];
+                    memcpy(recordData, chasePageBuf + chaseOffset, chaseLength);
+
+                    bool pass = checkRecordCondition(
+                        recordData,
+                        chaseLength,
+                        recordDescriptor,
+                        conditionAttribute,
+                        compOp,
+                        compValue.empty() ? nullptr : &compValue[0]
+                    );
+                    if (!pass)
+                    {
+                        goto skipSlot;
+                    }
+
+                    if (projectRecord(recordData,
+                                      chaseLength,
+                                      recordDescriptor,
+                                      attributeNames,
+                                      data) != 0)
+                    {
+                        goto skipSlot;
+                    }
+
+                    rid = chaseRid;
+                    return 0;
+                }
+
+            skipSlot:;
+                // continue to next slot
+            }
+
+            // Done with all slots in this page -> go to next
+            currentPage++;
+            currentSlot = 0;
+        }
+
+        return RBFM_EOF;
+    }
+
+
+    RC RBFM_ScanIterator::close()
+    {
+        isOpen = false;
+        compValue.clear();
+        return 0;
     }
 } // namespace PeterDB

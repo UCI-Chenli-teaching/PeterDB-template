@@ -53,6 +53,40 @@ namespace PeterDB {
 
     // Read a tombstone's forwarding RID from 'pageData + offset'.
     void readTombstone(const void *pageData, unsigned short offset, RID &dest);
+
+    /**
+     * Find index of 'attributeName' in 'recordDescriptor'.
+     * Returns -1 if not found.
+     */
+    int findAttributeIndex(const std::vector<Attribute> &recordDescriptor,
+                           const std::string &attributeName);
+
+    /**
+     * Parse a single attribute from the raw record data into the output buffer.
+     * The recordData format is the same as used in insertRecord/readRecord:
+     *   [n-byte null-indicator][field1-data][field2-data]...
+     *
+     * Output buffer layout for the single attribute will be:
+     *   [1-byte null-indicator][attribute bytes if not NULL].
+     */
+    RC parseSingleAttribute(const void *recordData,
+                            unsigned recordSize,
+                            const std::vector<Attribute> &recordDescriptor,
+                            unsigned attrIndex,
+                            void *outData);
+
+    bool checkRecordCondition(const void *fullRecord,
+                          unsigned recordSize,
+                          const std::vector<PeterDB::Attribute> &recordDescriptor,
+                          const std::string &conditionAttribute,
+                          const CompOp compOp,
+                          const void *compValue);
+
+    RC projectRecord(const void *fullRecord,
+                 unsigned recordSize,
+                 const std::vector<PeterDB::Attribute> &recordDescriptor,
+                 const std::vector<std::string> &attributeNames,
+                 void *outData);
 }
 
 #endif
