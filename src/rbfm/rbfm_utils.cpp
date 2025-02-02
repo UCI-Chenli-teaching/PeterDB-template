@@ -410,10 +410,10 @@ namespace PeterDB
                      const std::vector<Attribute> &recordDescriptor,
                      const std::vector<std::string> &attributeNames,
                      void *outData) {
-        unsigned x = (unsigned)attributeNames.size();
-        unsigned nullBytes = (unsigned)std::ceil((double)x / 8.0);
+        auto x = (unsigned)attributeNames.size();
+        auto nullBytes = (unsigned)std::ceil((double)x / 8.0);
 
-        unsigned char *outNulls = (unsigned char *)outData;
+        auto *outNulls = (unsigned char *)outData;
         std::memset(outNulls, 0, nullBytes);
 
         unsigned writeOffset = nullBytes;

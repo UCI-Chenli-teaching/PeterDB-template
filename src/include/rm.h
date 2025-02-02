@@ -1,6 +1,7 @@
 #ifndef _rm_h_
 #define _rm_h_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -95,6 +96,11 @@ namespace PeterDB {
         ~RelationManager();                                                 // Prevent unwanted destruction
         RelationManager(const RelationManager &);                           // Prevent construction by copying
         RelationManager &operator=(const RelationManager &);                // Prevent assignment
+
+    private:
+        // A small cache of known table -> vector<Attribute>
+        // for the built-in catalogs and any other tables we want to store in memory
+        std::map<std::string, std::vector<Attribute>> tablesCache;
 
     };
 

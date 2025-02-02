@@ -1,5 +1,7 @@
 #include "src/include/rm.h"
 
+#include "src/include/rm_utils.h"
+
 namespace PeterDB {
     RelationManager &RelationManager::instance() {
         static RelationManager _relation_manager = RelationManager();
@@ -15,7 +17,72 @@ namespace PeterDB {
     RelationManager &RelationManager::operator=(const RelationManager &) = default;
 
     RC RelationManager::createCatalog() {
-        return -1;
+        if (RecordBasedFileManager::instance().createFile("Tables") != 0) {
+            return -1;
+        }
+        if (RecordBasedFileManager::instance().createFile("Columns") != 0) {
+            RecordBasedFileManager::instance().destroyFile("Tables");
+            return -1;
+        }
+
+        FileHandle tablesFile, columnsFile;
+        if (RecordBasedFileManager::instance().openFile("Tables", tablesFile) != 0) {
+            return -1;
+        }
+        if (RecordBasedFileManager::instance().openFile("Columns", columnsFile) != 0) {
+            return -1;
+        }
+
+        std::vector<Attribute> tablesDesc;
+        std::vector<Attribute> columnsDesc;
+        getTablesRecordDescriptor(tablesDesc);
+        getColumnsRecordDescriptor(columnsDesc);
+
+        {
+            std::vector<std::string> vals = {"1", "Tables", "Tables"};
+            insertRowGeneric(tablesFile, tablesDesc, vals);
+        }
+        {
+            std::vector<std::string> vals = {"2", "Columns", "Columns"};
+            insertRowGeneric(tablesFile, tablesDesc, vals);
+        }
+        {
+            std::vector<std::string> vals = {"1", "table-id", "0", "4", "1"};
+            insertRowGeneric(columnsFile, columnsDesc, vals);
+        }
+        {
+            std::vector<std::string> vals = {"1", "table-name", "2", "50", "2"};
+            insertRowGeneric(columnsFile, columnsDesc, vals);
+        }
+        {
+            std::vector<std::string> vals = {"1", "file-name", "2", "50", "3"};
+            insertRowGeneric(columnsFile, columnsDesc, vals);
+        }
+        {
+            std::vector<std::string> vals = {"2", "table-id", "0", "4", "1"};
+            insertRowGeneric(columnsFile, columnsDesc, vals);
+        }
+        {
+            std::vector<std::string> vals = {"2", "column-name", "2", "50", "2"};
+            insertRowGeneric(columnsFile, columnsDesc, vals);
+        }
+        {
+            std::vector<std::string> vals = {"2", "column-type", "0", "4", "3"};
+            insertRowGeneric(columnsFile, columnsDesc, vals);
+        }
+        {
+            std::vector<std::string> vals = {"2", "column-length", "0", "4", "4"};
+            insertRowGeneric(columnsFile, columnsDesc, vals);
+        }
+        {
+            std::vector<std::string> vals = {"2", "column-position", "0", "4", "5"};
+            insertRowGeneric(columnsFile, columnsDesc, vals);
+        }
+
+        RecordBasedFileManager::instance().closeFile(tablesFile);
+        RecordBasedFileManager::instance().closeFile(columnsFile);
+
+        return 0;
     }
 
     RC RelationManager::deleteCatalog() {
