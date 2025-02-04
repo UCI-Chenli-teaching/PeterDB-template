@@ -484,4 +484,112 @@ namespace PeterDB
 
         return 0;
     }
+
+    RC removeAllRowsMatching(const std::string& catalogFileName,
+                             const std::vector<Attribute>& catalogDescriptor,
+                             const std::string& conditionAttribute,
+                             const CompOp compOp,
+                             const void* value)
+    {
+        FileHandle fileHandle;
+        RC rc = RecordBasedFileManager::instance().openFile(catalogFileName, fileHandle);
+        if (rc != 0)
+        {
+            return -1;
+        }
+
+        RBFM_ScanIterator scanIter;
+        std::vector<std::string> projection;
+
+        rc = RecordBasedFileManager::instance().scan(
+            fileHandle,
+            catalogDescriptor,
+            conditionAttribute,
+            compOp,
+            value,
+            projection,
+            scanIter);
+        if (rc != 0)
+        {
+            RecordBasedFileManager::instance().closeFile(fileHandle);
+            return -1;
+        }
+
+        std::vector<RID> toDelete;
+        RID rid;
+        char dummy[1];
+        while (true)
+        {
+            rc = scanIter.getNextRecord(rid, dummy);
+            if (rc == RBFM_EOF)
+            {
+                break;
+            }
+            if (rc != 0)
+            {
+                scanIter.close();
+                RecordBasedFileManager::instance().closeFile(fileHandle);
+                return -1;
+            }
+            toDelete.push_back(rid);
+        }
+        scanIter.close();
+
+        for (auto& delRid : toDelete)
+        {
+            rc = RecordBasedFileManager::instance().deleteRecord(fileHandle, catalogDescriptor, delRid);
+            if (rc != 0)
+            {
+                RecordBasedFileManager::instance().closeFile(fileHandle);
+                return -1;
+            }
+        }
+
+        RecordBasedFileManager::instance().closeFile(fileHandle);
+        return 0;
+    }
+
+    RC removeTableEntryFromCatalogs(const std::string& tableName)
+    {
+        std::string fileName;
+        int tableId;
+        RC rc = getFileNameAndTableId(tableName, fileName, tableId);
+        if (rc != 0)
+        {
+            return -1;
+        }
+
+        std::vector<Attribute> tablesDesc;
+        getTablesRecordDescriptor(tablesDesc);
+
+        int nameLen = (int)tableName.size();
+        std::vector<char> valueBuf(sizeof(int) + nameLen);
+        memcpy(valueBuf.data(), &nameLen, sizeof(int));
+        memcpy(valueBuf.data() + sizeof(int), tableName.data(), nameLen);
+
+        rc = removeAllRowsMatching("Tables",
+                                   tablesDesc,
+                                   "table-name",
+                                   EQ_OP,
+                                   valueBuf.data());
+        if (rc != 0)
+        {
+            return -1;
+        }
+
+        std::vector<Attribute> columnsDesc;
+        getColumnsRecordDescriptor(columnsDesc);
+
+        rc = removeAllRowsMatching("Columns",
+                                   columnsDesc,
+                                   "table-id",
+                                   EQ_OP,
+                                   &tableId);
+        if (rc != 0)
+        {
+            return -1;
+        }
+
+        return 0;
+    }
 } // namespace PeterDB

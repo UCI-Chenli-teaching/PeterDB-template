@@ -68,6 +68,7 @@ void testCreateInsertRead() {
 
     // 2) Create the table via RelationManager
     RelationManager &rm = RelationManager::instance();
+
     RC rc = rm.createTable("People", peopleDescriptor);
     if (rc != 0) {
         cout << "[TEST] createTable(\"People\") failed. rc=" << rc << endl;
@@ -152,9 +153,11 @@ int main()
 
     /* testing */
     RelationManager &rm = RelationManager::instance();
-    rm.deleteCatalog();
-    rm.createCatalog();
-    testCreateInsertRead();
+    // rm.deleteCatalog();
+    // rm.createCatalog();
+    RC rc = rm.deleteTable("People");
+    cout << "status " << rc;
+    // testCreateInsertRead();
     /* testing */
 
     // cli->start();

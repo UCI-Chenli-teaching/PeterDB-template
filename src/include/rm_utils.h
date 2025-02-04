@@ -54,6 +54,22 @@ namespace PeterDB
     //    (Ordered by column-position)
     RC getAttributesForTableId(int tableId,
         std::vector<Attribute>& attrs);
+
+    // Remove from "Tables" and "Columns" all rows describing `tableName`.
+    // This will:
+    //   1) Look up (tableId, fileName) for tableName
+    //   2) Delete the row from "Tables" with table-name = tableName
+    //   3) Delete all rows from "Columns" with table-id = tableId
+    RC removeTableEntryFromCatalogs(const std::string &tableName);
+
+    // A generic function that opens a file, scans with condition (attr=compValue),
+    // collects all RIDs, then calls rbfm.deleteRecord(...) for each.
+    // projection can be empty because we only need RIDs to delete.
+    RC removeAllRowsMatching(const std::string &catalogFileName,
+                             const std::vector<Attribute> &catalogDescriptor,
+                             const std::string &conditionAttribute,
+                             const CompOp compOp,
+                             const void *value);
 } // namespace PeterDB
 
 #endif

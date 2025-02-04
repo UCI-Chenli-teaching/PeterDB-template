@@ -21,6 +21,17 @@ namespace PeterDB {
         RC getNextTuple(RID &rid, void *data);
 
         RC close();
+
+    private:
+        // We keep a copy of the FileHandle so we can close it later
+        FileHandle fileHandle;
+
+        // The actual RBFM iterator that does the heavy lifting
+        RBFM_ScanIterator rbfmIter;
+
+        bool isOpen = false;
+
+        friend class RelationManager; // so RelationManager::scan() can init
     };
 
     // RM_IndexScanIterator is an iterator to go through index entries
