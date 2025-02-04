@@ -1,4 +1,7 @@
 #include "src/include/rm_utils.h"
+
+#include <algorithm>
+
 #include "src/include/rbfm.h"
 
 #include <cmath>    // for std::ceil
@@ -92,61 +95,393 @@ namespace PeterDB
         return rc;
     }
 
-    void getTablesRecordDescriptor(std::vector<Attribute> &descriptor) {
+    void getTablesRecordDescriptor(std::vector<Attribute>& descriptor)
+    {
         descriptor.clear();
 
         Attribute attr;
-        // 1) table-id : INT
+        // table-id : INT
         attr.name = "table-id";
         attr.type = TypeInt;
         attr.length = 4;
         descriptor.push_back(attr);
 
-        // 2) table-name : VARCHAR(50)
+        // table-name : VARCHAR(50)
         attr.name = "table-name";
         attr.type = TypeVarChar;
         attr.length = 50;
         descriptor.push_back(attr);
 
-        // 3) file-name : VARCHAR(50)
+        // file-name : VARCHAR(50)
         attr.name = "file-name";
         attr.type = TypeVarChar;
         attr.length = 50;
         descriptor.push_back(attr);
     }
 
-    void getColumnsRecordDescriptor(std::vector<Attribute> &descriptor) {
+    void getColumnsRecordDescriptor(std::vector<Attribute>& descriptor)
+    {
         descriptor.clear();
 
         Attribute attr;
-        // 1) table-id : INT
+        // table-id : INT
         attr.name = "table-id";
         attr.type = TypeInt;
         attr.length = 4;
         descriptor.push_back(attr);
 
-        // 2) column-name : VARCHAR(50)
+        // column-name : VARCHAR(50)
         attr.name = "column-name";
         attr.type = TypeVarChar;
         attr.length = 50;
         descriptor.push_back(attr);
 
-        // 3) column-type : INT
+        // column-type : INT
         attr.name = "column-type";
         attr.type = TypeInt;
         attr.length = 4;
         descriptor.push_back(attr);
 
-        // 4) column-length : INT
+        // column-length : INT
         attr.name = "column-length";
         attr.type = TypeInt;
         attr.length = 4;
         descriptor.push_back(attr);
 
-        // 5) column-position : INT
+        // column-position : INT
         attr.name = "column-position";
         attr.type = TypeInt;
         attr.length = 4;
         descriptor.push_back(attr);
+    }
+
+    RC getNextTableId(FileHandle& tablesFile,
+                      const std::vector<Attribute>& tablesDescriptor,
+                      int& nextTableId)
+    {
+        // We'll do a scan over "Tables" with no condition,
+        // reading "table-id" to find the maximum.
+        RBFM_ScanIterator scanIter;
+        std::vector<std::string> projection{"table-id"};
+
+        RC rc = RecordBasedFileManager::instance().scan(tablesFile,
+                                                        tablesDescriptor,
+                                                        "", // no condition
+                                                        NO_OP,
+                                                        nullptr,
+                                                        projection,
+                                                        scanIter);
+        if (rc != 0)
+        {
+            return -1;
+        }
+
+        int maxId = 0;
+        char data[50];
+        while (true)
+        {
+            RID rid;
+            rc = scanIter.getNextRecord(rid, data);
+            if (rc == RBFM_EOF)
+            {
+                break;
+            }
+            if (rc != 0)
+            {
+                // Some error while scanning
+                scanIter.close();
+                return -1;
+            }
+            // parse single attribute => [nullIndicator][4 bytes int]
+            unsigned char nullByte = *(unsigned char*)data;
+            bool isNull = ((nullByte & 0x80) != 0);
+            if (!isNull)
+            {
+                int currentId;
+                memcpy(&currentId, data + 1, sizeof(int));
+                if (currentId > maxId)
+                {
+                    maxId = currentId;
+                }
+            }
+        }
+        scanIter.close();
+
+        nextTableId = maxId + 1;
+        return 0;
+    }
+
+
+    RC insertTableMetadata(FileHandle& tablesFile,
+                           const std::vector<Attribute>& tablesDescriptor,
+                           int tableId,
+                           const std::string& tableName)
+    {
+        // build row => (table-id, table-name, file-name)
+        // file-name usually same as tableName
+        std::vector<std::string> rowValues = {
+            std::to_string(tableId),
+            tableName,
+            tableName
+        };
+
+        return insertRowGeneric(tablesFile, tablesDescriptor, rowValues);
+    }
+
+
+    RC insertColumnsMetadata(FileHandle& columnsFile,
+                             const std::vector<Attribute>& columnsDescriptor,
+                             int tableId,
+                             const std::vector<Attribute>& attrs)
+    {
+        int position = 1;
+        for (auto& attr : attrs)
+        {
+            // (tableId, colName, colType, colLength, position)
+            std::vector<std::string> rowValues = {
+                std::to_string(tableId),
+                attr.name,
+                std::to_string((int)attr.type),
+                std::to_string(attr.length),
+                std::to_string(position)
+            };
+
+            RC rc = insertRowGeneric(columnsFile, columnsDescriptor, rowValues);
+            if (rc != 0)
+            {
+                return -1; // insertion failed
+            }
+            position++;
+        }
+        return 0;
+    }
+
+    RC getFileNameAndTableId(const std::string& tableName,
+                             std::string& fileName,
+                             int& tableId)
+    {
+        FileHandle tablesFile;
+        RC rc = RecordBasedFileManager::instance().openFile("Tables", tablesFile);
+        if (rc != 0)
+        {
+            return -1;
+        }
+
+        std::vector<Attribute> tablesDesc;
+        getTablesRecordDescriptor(tablesDesc);
+
+        RBFM_ScanIterator scanIter;
+        std::vector<std::string> projection{"table-id", "file-name"};
+        std::string conditionAttr = "table-name";
+        CompOp compOp = EQ_OP;
+
+        int nameLen = (int)tableName.size();
+        std::vector<char> valueBuf(sizeof(int) + nameLen);
+        memcpy(valueBuf.data(), &nameLen, sizeof(int));
+        memcpy(valueBuf.data() + sizeof(int), tableName.data(), nameLen);
+
+        rc = RecordBasedFileManager::instance().scan(
+            tablesFile,
+            tablesDesc,
+            conditionAttr,
+            compOp,
+            valueBuf.data(),
+            projection,
+            scanIter);
+        if (rc != 0)
+        {
+            RecordBasedFileManager::instance().closeFile(tablesFile);
+            return -1;
+        }
+
+        RID rid;
+        char data[200];
+        RC fetchRc = scanIter.getNextRecord(rid, data);
+        if (fetchRc == RBFM_EOF)
+        {
+            // Not found
+            scanIter.close();
+            RecordBasedFileManager::instance().closeFile(tablesFile);
+            return -1;
+        }
+        if (fetchRc != 0)
+        {
+            // Some error
+            scanIter.close();
+            RecordBasedFileManager::instance().closeFile(tablesFile);
+            return -1;
+        }
+
+        // 'data' now has 2 fields: (table-id, file-name), all non-null presumably
+        // parse them:
+        //   [1-byte nullIndicator=0][(table-id)4 bytes][(fileName-len)4 bytes + fileName chars]
+        unsigned offset = 0;
+        unsigned char nullByte = *(unsigned char*)(data + offset);
+        offset += 1; // move past null-indicator
+        if (nullByte != 0x00)
+        {
+            // unexpected null fields
+            scanIter.close();
+            RecordBasedFileManager::instance().closeFile(tablesFile);
+            return -1;
+        }
+
+        // table-id
+        memcpy(&tableId, data + offset, sizeof(int));
+        offset += sizeof(int);
+
+        // file-name (varchar)
+        int varLen;
+        memcpy(&varLen, data + offset, sizeof(int));
+        offset += sizeof(int);
+
+        fileName.resize(varLen);
+        memcpy(&fileName[0], data + offset, varLen);
+        offset += varLen;
+
+        scanIter.close();
+        RecordBasedFileManager::instance().closeFile(tablesFile);
+
+        return 0;
+    }
+
+
+    /**
+     *  2) getAttributesForTableId:
+     *     Scans "Columns" where "table-id = tableId"
+     *     to reconstruct vector<Attribute> => (name, type, length).
+     *     We also read "column-position" to store them in ascending order, if needed.
+     */
+    RC getAttributesForTableId(int tableId,
+                               std::vector<Attribute>& attrs)
+    {
+        // Open "Columns"
+        FileHandle columnsFile;
+        RC rc = RecordBasedFileManager::instance().openFile("Columns", columnsFile);
+        if (rc != 0)
+        {
+            return -1;
+        }
+
+        // Build descriptor for "Columns"
+        std::vector<Attribute> columnsDesc;
+        getColumnsRecordDescriptor(columnsDesc);
+
+        // Condition => "table-id" = tableId (TypeInt)
+        RBFM_ScanIterator scanIter;
+        std::vector<std::string> projection{
+            "column-name",
+            "column-type",
+            "column-length",
+            "column-position"
+        };
+        std::string conditionAttr = "table-id";
+        CompOp compOp = EQ_OP;
+
+        // "value" for an int: just 4 bytes
+        int condVal = tableId;
+
+        rc = RecordBasedFileManager::instance().scan(
+            columnsFile,
+            columnsDesc,
+            conditionAttr,
+            compOp,
+            &condVal,
+            projection,
+            scanIter);
+        if (rc != 0)
+        {
+            RecordBasedFileManager::instance().closeFile(columnsFile);
+            return -1;
+        }
+
+        // We'll gather the results in a temporary structure that includes columnPosition
+        struct ColInfo
+        {
+            std::string name;
+            AttrType type;
+            int length;
+            int position;
+        };
+        std::vector<ColInfo> temp;
+
+        while (true)
+        {
+            RID rid;
+            char data[300];
+            RC fetchRc = scanIter.getNextRecord(rid, data);
+            if (fetchRc == RBFM_EOF)
+            {
+                break;
+            }
+            if (fetchRc != 0)
+            {
+                scanIter.close();
+                RecordBasedFileManager::instance().closeFile(columnsFile);
+                return -1;
+            }
+
+            unsigned offset = 0;
+            unsigned char nullByte = *(unsigned char*)(data + offset);
+            offset += 1;
+            if (nullByte != 0x00)
+            {
+                // unexpected null
+                continue;
+            }
+
+            // column-name => varchar
+            int varLen;
+            memcpy(&varLen, data + offset, sizeof(int));
+            offset += sizeof(int);
+
+            std::string colName;
+            colName.resize(varLen);
+            memcpy(&colName[0], data + offset, varLen);
+            offset += varLen;
+
+            // column-type => int
+            int colType;
+            memcpy(&colType, data + offset, sizeof(int));
+            offset += sizeof(int);
+
+            // column-length => int
+            int colLen;
+            memcpy(&colLen, data + offset, sizeof(int));
+            offset += sizeof(int);
+
+            // column-position => int
+            int colPos;
+            memcpy(&colPos, data + offset, sizeof(int));
+            offset += sizeof(int);
+
+            ColInfo ci;
+            ci.name = colName;
+            ci.type = (AttrType)colType;
+            ci.length = colLen;
+            ci.position = colPos;
+            temp.push_back(ci);
+        }
+
+        scanIter.close();
+        RecordBasedFileManager::instance().closeFile(columnsFile);
+
+        // Sort by column-position so the attributes appear in the correct order
+        std::sort(temp.begin(), temp.end(), [](const ColInfo& a, const ColInfo& b)
+        {
+            return a.position < b.position;
+        });
+
+        attrs.clear();
+        for (auto& ci : temp)
+        {
+            Attribute A;
+            A.name = ci.name;
+            A.type = ci.type;
+            A.length = ci.length;
+            attrs.push_back(A);
+        }
+
+        return 0;
     }
 } // namespace PeterDB
