@@ -560,6 +560,13 @@ namespace PeterDB
 
             while (currentSlot < numSlots)
             {
+                unsigned short offset, length;
+                getSlotInfo(pageBuf, currentSlot, offset, length);
+                if (length == 0 || isTombstone(length)) {
+                    currentSlot++;
+                    continue;
+                }
+
                 rid.pageNum = currentPage;
                 rid.slotNum = currentSlot;
                 currentSlot++;
@@ -576,7 +583,7 @@ namespace PeterDB
                 }
 
                 bool passCond = checkRecordCondition(recordData,
-                                                     PAGE_SIZE, // or you can store the exact length
+                                                     PAGE_SIZE,
                                                      recordDescriptor,
                                                      conditionAttribute,
                                                      compOp,

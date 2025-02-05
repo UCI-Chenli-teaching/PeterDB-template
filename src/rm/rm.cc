@@ -113,6 +113,10 @@ namespace PeterDB
 
     RC RelationManager::createTable(const std::string& tableName, const std::vector<Attribute>& attrs)
     {
+        if (tableName == "Tables" || tableName == "Columns") {
+            return -1;
+        }
+
         RC rc = RecordBasedFileManager::instance().createFile(tableName);
         if (rc != 0)
         {
@@ -218,6 +222,10 @@ namespace PeterDB
 
     RC RelationManager::insertTuple(const std::string& tableName, const void* data, RID& rid)
     {
+        if (tableName == "Tables" || tableName == "Columns") {
+            return -1;
+        }
+
         std::string fileName;
         int tableId;
         RC rc = getFileNameAndTableId(tableName, fileName, tableId);
@@ -253,6 +261,10 @@ namespace PeterDB
 
     RC RelationManager::deleteTuple(const std::string& tableName, const RID& rid)
     {
+        if (tableName == "Tables" || tableName == "Columns") {
+            return -1;
+        }
+
         std::string fileName;
         int tableId;
         RC rc = getFileNameAndTableId(tableName, fileName, tableId);
