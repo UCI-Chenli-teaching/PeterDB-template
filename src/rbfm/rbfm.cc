@@ -79,7 +79,7 @@ namespace PeterDB
 
         if (targetPage < 0 && totalPages > 1)
         {
-            for (unsigned p = 0; p < totalPages - 1; p++)
+            for (unsigned p = totalPages - 1; p > 0  - 1; p++)
             {
                 char pageBuf[PAGE_SIZE];
                 if (fileHandle.readPage(p, pageBuf) != 0)

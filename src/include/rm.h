@@ -49,6 +49,7 @@ namespace PeterDB {
     class RelationManager {
     public:
         static RelationManager &instance();
+        void SyncTablesCache();
 
         RC createCatalog();
 

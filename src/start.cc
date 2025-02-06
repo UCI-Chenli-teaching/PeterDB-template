@@ -155,9 +155,14 @@ int main()
     RelationManager &rm = RelationManager::instance();
     // rm.deleteCatalog();
     // rm.createCatalog();
-    RC rc = rm.deleteTable("People");
-    cout << "status " << rc;
-    // testCreateInsertRead();
+
+    RC rc;
+    rc = rm.deleteCatalog();
+    cout << "status " << rc << endl;
+    rc = rm.createCatalog();
+    cout << "status " << rc << endl;
+
+    testCreateInsertRead();
     /* testing */
 
     // cli->start();

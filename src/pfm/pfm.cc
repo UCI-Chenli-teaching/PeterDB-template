@@ -54,10 +54,37 @@ namespace PeterDB {
             return -1; // Return an error code if the file could not be opened
         }
         fileHandle.file = file;
+
+        file->seekg(0, std::ios::beg);
+
+        unsigned int counters[4];
+        file->read(reinterpret_cast<char*>(counters), sizeof(counters));
+        if (file->fail()) {
+            return -1;
+        }
+        fileHandle.readPageCounter = counters[static_cast<unsigned int>(CounterType::READ_PAGE_COUNTER)];
+        fileHandle.writePageCounter = counters[static_cast<unsigned int>(CounterType::WRITE_PAGE_COUNTER)];
+        fileHandle.appendPageCounter = counters[static_cast<unsigned int>(CounterType::APPEND_PAGE_COUNTER)];
+        fileHandle.numberOfPages = counters[static_cast<unsigned int>(CounterType::NUMBER_OF_PAGES)];
+
         return 0;
     }
 
     RC PagedFileManager::closeFile(FileHandle &fileHandle) {
+        unsigned int counters[4];
+        counters[static_cast<unsigned int>(CounterType::NUMBER_OF_PAGES)] = fileHandle.numberOfPages;
+        counters[static_cast<unsigned int>(CounterType::READ_PAGE_COUNTER)] = fileHandle.readPageCounter;
+        counters[static_cast<unsigned int>(CounterType::WRITE_PAGE_COUNTER)] = fileHandle.writePageCounter;
+        counters[static_cast<unsigned int>(CounterType::APPEND_PAGE_COUNTER)] = fileHandle.appendPageCounter;
+
+        fileHandle.file->seekp(0, std::ios::beg);
+        fileHandle.file->write(reinterpret_cast<const char*>(counters), sizeof(counters));
+        if (fileHandle.file->fail()) {
+            return -1;
+        }
+        fileHandle.file->flush();
+
+
         fileHandle.file->close();
         delete fileHandle.file;
         fileHandle.file = nullptr;
@@ -72,30 +99,40 @@ namespace PeterDB {
     }
 
     RC FileHandle::increaseCounter(CounterType counterType) {
-        file->seekg(0, std::ios::beg);
+        // file->seekg(0, std::ios::beg);
 
         // Read the existing 4 counters (16 bytes) from the file header
-        unsigned int counters[4];
-        file->read(reinterpret_cast<char*>(counters), sizeof(counters));
-        if (file->fail()) {
-            return -1;
+        // unsigned int counters[4];
+        // file->read(reinterpret_cast<char*>(counters), sizeof(counters));
+        // if (file->fail()) {
+        //     return -1;
+        // }
+        //
+        // counters[static_cast<unsigned int>(counterType)]++;
+
+        // // Write the updated counters back to the file header
+        // file->seekp(0, std::ios::beg);
+        // file->write(reinterpret_cast<const char*>(counters), sizeof(counters));
+        // if (file->fail()) {
+        //     return -1;
+        // }
+        // file->flush();
+
+
+        switch (counterType) {
+            case CounterType::READ_PAGE_COUNTER:
+                readPageCounter++;
+                break;
+            case CounterType::WRITE_PAGE_COUNTER:
+                writePageCounter++;
+                break;
+            case CounterType::APPEND_PAGE_COUNTER:
+                appendPageCounter++;
+                break;
+            case CounterType::NUMBER_OF_PAGES:
+                numberOfPages++;
+                break;
         }
-
-        counters[static_cast<unsigned int>(counterType)]++;
-
-        // Write the updated counters back to the file header
-        file->seekp(0, std::ios::beg);
-        file->write(reinterpret_cast<const char*>(counters), sizeof(counters));
-        if (file->fail()) {
-            return -1;
-        }
-        file->flush();
-
-        // Update our in-memory counters
-        readPageCounter   = counters[0];
-        writePageCounter  = counters[1];
-        appendPageCounter = counters[2];
-        numberOfPages     = counters[3];
 
         return 0;
     }
@@ -184,13 +221,7 @@ namespace PeterDB {
     }
 
     unsigned FileHandle::getNumberOfPages() {
-
-        file->seekg(0, std::ios::beg);
-
-        unsigned int counters[4];
-        file->read(reinterpret_cast<char*>(counters), sizeof(counters));
-
-        return counters[static_cast<unsigned int>(CounterType::NUMBER_OF_PAGES)];
+        return numberOfPages;
     }
 
 
