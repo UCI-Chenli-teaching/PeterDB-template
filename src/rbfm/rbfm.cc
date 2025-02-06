@@ -528,10 +528,37 @@ namespace PeterDB
         totalPages = fileHandle->getNumberOfPages();
 
         compValue.clear();
-        if (value != nullptr && op != NO_OP)
-        {
-            const char* bytes = (const char*)value;
-            compValue.insert(compValue.end(), bytes, bytes + PAGE_SIZE);
+        if (value != nullptr && op != NO_OP) {
+
+            AttrType condType = TypeInt; // default fallback
+            for (auto &attr : recordDescriptor) {
+                if (attr.name == conditionAttribute) {
+                    condType = attr.type;
+                    break;
+                }
+            }
+
+            const char *bytes = reinterpret_cast<const char *>(value);
+            switch (condType) {
+            case TypeInt:
+            case TypeReal: {
+                    // 4 bytes
+                    compValue.assign(bytes, bytes + 4);
+                    break;
+            }
+            case TypeVarChar: {
+                    // The first 4 bytes store the length
+                    int varLen = 0;
+                    std::memcpy(&varLen, bytes, sizeof(int));
+                    // total = 4 bytes + varLen
+                    compValue.resize(sizeof(int) + varLen);
+                    std::memcpy(compValue.data(), bytes, sizeof(int) + varLen);
+                    break;
+            }
+            default:
+                // Should not happen with only (int, float, varchar)
+                    break;
+            }
         }
 
         return 0;
