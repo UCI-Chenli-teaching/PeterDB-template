@@ -592,4 +592,77 @@ namespace PeterDB
 
         return 0;
     }
+
+    RC insertOneColumnMetadata(int tableId,
+                               const Attribute& attr,
+                               int position)
+    {
+        // 1) Open the "Columns" catalog
+        FileHandle columnsFile;
+        RC rc = RecordBasedFileManager::instance().openFile("Columns", columnsFile);
+        if (rc != 0)
+        {
+            return -1;
+        }
+
+        // 2) Build the record descriptor for the "Columns" table
+        //    (this is the same descriptor used in createCatalog())
+        std::vector<Attribute> columnsDesc;
+        getColumnsRecordDescriptor(columnsDesc);
+
+        // 3) Construct a record in the format:
+        //    (table-id:int, column-name:varchar(50), column-type:int, column-length:int, column-position:int)
+        //    - Exactly 5 attributes
+        //    - We have 1-byte of null-indicator if none of them is NULL
+        const int numFields = 5;
+        unsigned char nullIndicator = 0; // 0 means "no attribute is null"
+        // We only need 1 byte for null indicators if numFields <= 8
+        char recordData[200]; // Enough for a short record
+        int offset = 0;
+
+        // (a) Write the null-indicator byte
+        memcpy(recordData + offset, &nullIndicator, 1);
+        offset += 1;
+
+        // (b) table-id (int)
+        memcpy(recordData + offset, &tableId, sizeof(int));
+        offset += sizeof(int);
+
+        // (c) column-name (varchar)
+        //  First write 4 bytes = length
+        int nameLen = (int)attr.name.size();
+        memcpy(recordData + offset, &nameLen, sizeof(int));
+        offset += sizeof(int);
+        //  Then the actual characters
+        memcpy(recordData + offset, attr.name.c_str(), nameLen);
+        offset += nameLen;
+
+        // (d) column-type (int)
+        int colType = (int)attr.type;
+        memcpy(recordData + offset, &colType, sizeof(int));
+        offset += sizeof(int);
+
+        // (e) column-length (int)
+        int colLen = (int)attr.length;
+        memcpy(recordData + offset, &colLen, sizeof(int));
+        offset += sizeof(int);
+
+        // (f) column-position (int)
+        memcpy(recordData + offset, &position, sizeof(int));
+        offset += sizeof(int);
+
+        // 4) Insert the record
+        RID rid;
+        rc = RecordBasedFileManager::instance().insertRecord(columnsFile, columnsDesc, recordData, rid);
+        if (rc != 0)
+        {
+            RecordBasedFileManager::instance().closeFile(columnsFile);
+            return -1;
+        }
+
+        // 5) Close the "Columns" file
+        RecordBasedFileManager::instance().closeFile(columnsFile);
+
+        return 0;
+    }
 } // namespace PeterDB

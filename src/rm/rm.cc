@@ -3,21 +3,13 @@
 #include <algorithm>
 #include <cstring>
 #include <iostream>
+#include <src/include/rbfm_utils.h>
+
 #include "src/include/rm_utils.h"
 #include "src/include/rbfm.h"
 #include "src/include/pfm.h"
 
 namespace PeterDB {
-
-    // A helper struct we’ll store in the cache:
-    struct TableMeta {
-        int tableId;
-        std::string fileName;
-        std::vector<Attribute> attrs;
-    };
-
-    // We store tableName -> TableMeta
-    static std::map<std::string, TableMeta> g_tableCache;
 
     // A small helper to find the maximum tableId from the in-memory cache
     // so we can assign the next ID without scanning. If no tables, return 0.
@@ -64,7 +56,6 @@ namespace PeterDB {
                 projection,
                 scanIter);
         if (rc != 0) {
-            // Failed scanning "Tables"? Close everything and return.
             scanIter.close();
             PagedFileManager::instance().closeFile(tablesFile);
             PagedFileManager::instance().closeFile(columnsFile);
@@ -115,7 +106,11 @@ namespace PeterDB {
         getColumnsRecordDescriptor(columnsDesc);
 
         RBFM_ScanIterator cScanIter;
-        std::vector<std::string> cProjection{"column-name", "column-type", "column-length", "column-position", "table-id"};
+
+        std::cout << "SyncTablesCache: Scanning Columns" << std::endl;
+
+        std::vector<std::string> cProjection = {"column-name", "column-type", "column-length", "column-position", "table-id"};
+
         rc = RecordBasedFileManager::instance().scan(
                 columnsFile,
                 columnsDesc,
@@ -336,10 +331,9 @@ namespace PeterDB {
         }
         RecordBasedFileManager::instance().closeFile(columnsFile);
 
-        // Now update our in-memory cache
         TableMeta meta;
         meta.tableId = newTableId;
-        meta.fileName = tableName; // typically the same as tableName
+        meta.fileName = tableName;
         meta.attrs = attrs;
         g_tableCache[tableName] = meta;
 
@@ -348,7 +342,7 @@ namespace PeterDB {
 
     RC RelationManager::deleteTable(const std::string &tableName) {
         if (tableName == "Tables" || tableName == "Columns") {
-            return -1; // disallow dropping the catalogs
+            return -1;
         }
 
         auto it = g_tableCache.find(tableName);
@@ -371,7 +365,7 @@ namespace PeterDB {
     }
 
     RC RelationManager::getAttributes(const std::string &tableName, std::vector<Attribute> &attrs) {
-        // Just do a map lookup
+
         auto it = g_tableCache.find(tableName);
         if (it == g_tableCache.end()) {
             return -1;
@@ -467,7 +461,6 @@ namespace PeterDB {
         auto it = g_tableCache.find(tableName);
         if (it == g_tableCache.end()) return -1;
 
-        // open file
         if (RecordBasedFileManager::instance().openFile(it->second.fileName,
                                                         rm_ScanIterator.fileHandle) != 0) {
             return -1;
@@ -508,12 +501,29 @@ namespace PeterDB {
         return 0;
     }
 
-    RC RelationManager::dropAttribute(const std::string &tableName, const std::string &attributeName) {
-        return -1; // not implemented
+    RC RelationManager::addAttribute(const std::string &tableName, const Attribute &attr) {
+        auto it = g_tableCache.find(tableName);
+        if (it == g_tableCache.end()) return -1;
+
+        int tableId = it->second.tableId;
+        RC rc = insertOneColumnMetadata(tableId, attr, it->second.attrs.size() + 1 /* position */);
+        if (rc != 0) return rc;
+
+        it->second.attrs.push_back(attr);
+
+        return 0;
     }
 
-    RC RelationManager::addAttribute(const std::string &tableName, const Attribute &attr) {
-        return -1; // not implemented
+    RC RelationManager::dropAttribute(const std::string &tableName, const std::string &attributeName) {
+        auto it = g_tableCache.find(tableName);
+        if (it == g_tableCache.end()) return -1;
+
+        auto &vec = it->second.attrs;
+        vec.erase(std::remove_if(vec.begin(), vec.end(), [&](const Attribute &A){
+            return (A.name == attributeName);
+        }), vec.end());
+
+        return 0;
     }
 
     // QE IX related

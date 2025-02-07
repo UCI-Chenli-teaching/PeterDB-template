@@ -10,6 +10,16 @@
 namespace PeterDB {
 #define RM_EOF (-1)  // end of a scan operator
 
+    // A helper struct we’ll store in the cache:
+    struct TableMeta {
+        int tableId;
+        std::string fileName;
+        std::vector<Attribute> attrs;
+    };
+
+    // We store tableName -> TableMeta
+    static std::map<std::string, TableMeta> g_tableCache;
+
     // RM_ScanIterator is an iterator to go through tuples
     class RM_ScanIterator {
     public:

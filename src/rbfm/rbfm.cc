@@ -79,7 +79,7 @@ namespace PeterDB
 
         if (targetPage < 0 && totalPages > 1)
         {
-            for (unsigned p = totalPages - 1; p > 0  - 1; p++)
+            for (unsigned p = totalPages - 1; p > 0 - 1; p++)
             {
                 char pageBuf[PAGE_SIZE];
                 if (fileHandle.readPage(p, pageBuf) != 0)
@@ -159,22 +159,20 @@ namespace PeterDB
     {
         char pageData[PAGE_SIZE];
         RC rc = fileHandle.readPage(rid.pageNum, pageData);
-        if (rc != 0) return -1;
-
-        // check slot bounds
-        unsigned short numSlots = getNumSlots(pageData);
-        if (rid.slotNum >= numSlots) return -1;
-
-        unsigned short offset, length;
-        getSlotInfo(pageData, rid.slotNum, offset, length);
-
-        if (length == 0)
+        if (rc != 0)
         {
-            // means deleted
             return -1;
         }
 
-        // **If it is a tombstone, follow it**
+        unsigned short numSlots = getNumSlots(pageData);
+        if (rid.slotNum >= numSlots) return -1;
+        unsigned short offset, length;
+        getSlotInfo(pageData, rid.slotNum, offset, length);
+        if (length == 0)
+        {
+            return -1; // deleted record
+        }
+
         if (isTombstone(length))
         {
             RID fwd;
@@ -182,9 +180,105 @@ namespace PeterDB
             return readRecord(fileHandle, recordDescriptor, fwd, data);
         }
 
-        memcpy(data, pageData + offset, length);
+        char rawSlotBuf[length];
+        memcpy(rawSlotBuf, pageData + offset, length);
+
+        unsigned numFields = (unsigned)recordDescriptor.size();
+        unsigned nullIndicatorSize = (unsigned)ceil((double)numFields / 8.0);
+
+        memset(data, 0, nullIndicatorSize);
+
+        unsigned oldNumFields = (unsigned)recordDescriptor.size();
+
+        unsigned oldNullSize = (unsigned)ceil((double)oldNumFields / 8.0);
+        if (oldNullSize > length)
+        {
+            return -1;
+        }
+
+        const unsigned char* oldNulls = (unsigned char*)rawSlotBuf;
+        unsigned readOffset = oldNullSize;
+
+        unsigned char* newNulls = (unsigned char*)data;
+
+        unsigned writeOffset = nullIndicatorSize;
+
+        for (unsigned i = 0; i < numFields; i++)
+        {
+            int bytePos = i / 8;
+            int bitPos = 7 - (i % 8);
+
+            bool oldIsNull = false;
+            if (bytePos < (int)oldNullSize)
+            {
+                oldIsNull = (oldNulls[bytePos] & (1 << bitPos)) != 0;
+            }
+            if (readOffset >= length)
+            {
+                oldIsNull = true;
+            }
+
+            if (oldIsNull)
+            {
+                newNulls[bytePos] |= (1 << bitPos);
+                continue;
+            }
+
+            switch (recordDescriptor[i].type)
+            {
+            case TypeInt:
+            case TypeReal:
+                {
+                    if (readOffset + 4 > length)
+                    {
+                        newNulls[bytePos] |= (1 << bitPos);
+                    }
+                    else
+                    {
+                        memcpy((char*)data + writeOffset, rawSlotBuf + readOffset, 4);
+                        writeOffset += 4;
+                        readOffset += 4;
+                    }
+                    break;
+                }
+            case TypeVarChar:
+                {
+                    // first read 4 bytes => length of string
+                    if (readOffset + 4 > length)
+                    {
+                        // no space => set NULL
+                        newNulls[bytePos] |= (1 << bitPos);
+                        break;
+                    }
+                    int varLen;
+                    memcpy(&varLen, rawSlotBuf + readOffset, 4);
+
+                    // check if we have enough bytes for the string itself
+                    if (readOffset + 4 + varLen > length)
+                    {
+                        // truncated => set NULL
+                        newNulls[bytePos] |= (1 << bitPos);
+                    }
+                    else
+                    {
+                        // copy length + string
+                        memcpy((char*)data + writeOffset, rawSlotBuf + readOffset, 4 + varLen);
+                        writeOffset += (4 + varLen);
+                        readOffset += (4 + varLen);
+                    }
+                    break;
+                }
+            default:
+                {
+                    // unknown type => treat as error or null
+                    return -1;
+                }
+            }
+        }
+
         return 0;
     }
+
 
     RC RecordBasedFileManager::deleteRecord(FileHandle& fileHandle, const std::vector<Attribute>& recordDescriptor,
                                             const RID& rid)
@@ -528,25 +622,30 @@ namespace PeterDB
         totalPages = fileHandle->getNumberOfPages();
 
         compValue.clear();
-        if (value != nullptr && op != NO_OP) {
-
+        if (value != nullptr && op != NO_OP)
+        {
             AttrType condType = TypeInt; // default fallback
-            for (auto &attr : recordDescriptor) {
-                if (attr.name == conditionAttribute) {
+            for (auto& attr : recordDescriptor)
+            {
+                if (attr.name == conditionAttribute)
+                {
                     condType = attr.type;
                     break;
                 }
             }
 
-            const char *bytes = reinterpret_cast<const char *>(value);
-            switch (condType) {
+            const char* bytes = reinterpret_cast<const char*>(value);
+            switch (condType)
+            {
             case TypeInt:
-            case TypeReal: {
+            case TypeReal:
+                {
                     // 4 bytes
                     compValue.assign(bytes, bytes + 4);
                     break;
-            }
-            case TypeVarChar: {
+                }
+            case TypeVarChar:
+                {
                     // The first 4 bytes store the length
                     int varLen = 0;
                     std::memcpy(&varLen, bytes, sizeof(int));
@@ -554,10 +653,10 @@ namespace PeterDB
                     compValue.resize(sizeof(int) + varLen);
                     std::memcpy(compValue.data(), bytes, sizeof(int) + varLen);
                     break;
-            }
+                }
             default:
                 // Should not happen with only (int, float, varchar)
-                    break;
+                break;
             }
         }
 
@@ -589,7 +688,8 @@ namespace PeterDB
             {
                 unsigned short offset, length;
                 getSlotInfo(pageBuf, currentSlot, offset, length);
-                if (length == 0 || isTombstone(length)) {
+                if (length == 0 || isTombstone(length))
+                {
                     currentSlot++;
                     continue;
                 }

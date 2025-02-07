@@ -484,4 +484,136 @@ namespace PeterDB
 
         return 0;
     }
+
+    static void readOneFieldIfPossible(const Attribute &attr,
+                                       const void *slotData,
+                                       unsigned slotLen,
+                                       unsigned currentOffset,
+                                       bool &isNull,
+                                       unsigned &consumed,
+                                       char *destField /*where we store the actual field bytes*/) {
+        isNull = true; // default
+        consumed = 0;
+
+        // If we don't even have 4 bytes for an Int/Real or for the length of a VarChar,
+        // treat it as NULL:
+        if (currentOffset >= slotLen) {
+            // isNull remains true, consumed remains 0
+            return;
+        }
+
+        switch (attr.type) {
+            case TypeInt:
+            case TypeReal:
+                if (currentOffset + 4 <= slotLen) {
+                    // We can read 4 bytes
+                    memcpy(destField, (char*)slotData + currentOffset, 4);
+                    isNull = false;
+                    consumed = 4;
+                }
+                break;
+            case TypeVarChar: {
+                if (currentOffset + 4 > slotLen) {
+                    // can't even read the length
+                    break;
+                }
+                int varLen;
+                memcpy(&varLen, (char*)slotData + currentOffset, 4);
+
+                // Check if we have enough bytes: 4 for length + varLen
+                if (currentOffset + 4 + varLen <= slotLen) {
+                    // We can read the entire string
+                    memcpy(destField, (char*)slotData + currentOffset, 4 + varLen);
+                    isNull = false;
+                    consumed = 4 + varLen;
+                }
+                break;
+            }
+        }
+    }
+
+    /*
+     * A function that, given:
+     *   - raw slotData (the *old* record as stored),
+     *   - slotLen (bytes in slotData),
+     *   - desiredSchema (the *new or current* schema),
+     * produces a standard “nullIndicator + fields” byte-array in `reinterpretedData`
+     * that exactly fits desiredSchema.size() attributes.
+     *
+     * This is a naive approach:
+     *   - If there's not enough data to read all fields, the missing fields are NULL.
+     *   - If there's leftover data after reading `desiredSchema.size()` fields, we ignore it.
+     */
+    RC adjustRecordToNewSchema(const void *slotData,
+                               unsigned slotLen,
+                               const std::vector<Attribute> &desiredSchema,
+                               void *reinterpretedData) {
+
+        unsigned numAttrs = (unsigned)desiredSchema.size();
+        if (numAttrs == 0) {
+            // no attributes => nothing to do
+            return 0;
+        }
+
+        // size of the null-indicator for the new record
+        unsigned nullIndicatorSize = (unsigned)std::ceil((double)numAttrs / 8.0);
+
+        // zero out the output for safety
+        std::memset(reinterpretedData, 0, nullIndicatorSize);
+
+        unsigned writeOffset = nullIndicatorSize; // start writing fields after the null-indicator
+        unsigned readOffset = 0; // current offset in slotData
+
+        // For each attribute in the *new* schema, see if we can parse from old data:
+        for (unsigned i = 0; i < numAttrs; i++) {
+            bool isNull;
+            unsigned consumed;
+            char fieldBuf[PAGE_SIZE];
+
+            // Attempt to read the i-th field from the old slot data
+            readOneFieldIfPossible(desiredSchema[i],
+                                   slotData,
+                                   slotLen,
+                                   readOffset,
+                                   isNull,
+                                   consumed,
+                                   fieldBuf);
+
+            if (isNull) {
+                // Mark the bit in the new record's null-indicator
+                int bytePos = i / 8;
+                int bitPos = 7 - (i % 8);
+                unsigned char *nulls = (unsigned char*)reinterpretedData;
+                nulls[bytePos] |= (1 << bitPos);
+
+                // No actual data bytes get written
+            } else {
+                // We have a real field:
+                // For TypeInt/Real, 4 bytes
+                // For TypeVarChar, 4 + varLen
+                switch (desiredSchema[i].type) {
+                    case TypeInt:
+                    case TypeReal:
+                        memcpy((char*)reinterpretedData + writeOffset, fieldBuf, 4);
+                        writeOffset += 4;
+                        break;
+                    case TypeVarChar: {
+                        int varLen;
+                        memcpy(&varLen, fieldBuf, 4);
+
+                        // copy the length + the characters
+                        memcpy((char*)reinterpretedData + writeOffset, fieldBuf, 4 + varLen);
+                        writeOffset += 4 + varLen;
+                        break;
+                    }
+                }
+            }
+
+            // Whether or not it was null, advance readOffset by `consumed`.
+            // This ensures we “use up” however many bytes we recognized from the old record.
+            readOffset += consumed;
+        }
+
+        return 0;
+    }
 }

@@ -87,6 +87,19 @@ namespace PeterDB {
                  const std::vector<PeterDB::Attribute> &recordDescriptor,
                  const std::vector<std::string> &attributeNames,
                  void *outData);
+
+    /*
+     * A function that, given:
+     *   - raw slotData (the *old* record as stored),
+     *   - slotLen (bytes in slotData),
+     *   - desiredSchema (the *new or current* schema),
+     * produces a standard “nullIndicator + fields” byte-array in `reinterpretedData`
+     * that exactly fits desiredSchema.size() attributes.
+     */
+    RC adjustRecordToNewSchema(const void *slotData,
+                           unsigned slotLen,
+                           const std::vector<Attribute> &desiredSchema,
+                           void *reinterpretedData);
 }
 
 #endif
