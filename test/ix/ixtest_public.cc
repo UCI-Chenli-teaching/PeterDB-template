@@ -1351,7 +1351,7 @@ namespace PeterDBTesting {
     TEST_F(IX_Test, extra_merge_on_deletion) {
         // Checks whether the deletion is properly managed (non-lazy deletion)
         // Functions tested
-        // 1. Insert entries to make a height 1 tree
+        // 1. Insert entries to make a height 2 tree
         // 2. Print BTree
         // 3. Delete the "unsafe one"
         // 4. Print BTree
@@ -1375,7 +1375,7 @@ namespace PeterDBTesting {
         ASSERT_EQ(ix.printBTree(ixFileHandle, empNameAttr, stream), success)
                                     << "indexManager::printBTree() should succeed";
 
-        validateTree(stream, 13, 13, 2, 1);
+        validateTree(stream, 13, 13, 2, 2);
 
         // delete the 2nd entry
         prepareKeyAndRid(2, key, rid, empNameAttr.length);
@@ -1388,7 +1388,7 @@ namespace PeterDBTesting {
         ASSERT_EQ(ix.printBTree(ixFileHandle, empNameAttr, stream), success)
                                     << "indexManager::printBTree() should succeed";
 
-        validateTree(stream, 12, 12, 1, 1);
+        validateTree(stream, 12, 12, 1, 2);
 
     }
 
