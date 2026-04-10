@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.9)
+cmake_minimum_required(VERSION 3.5)
 project(PeterDB)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -15,13 +15,13 @@ include(ExternalProject)
 ExternalProject_Add(googletest
         GIT_REPOSITORY    https://github.com/google/googletest.git
         GIT_TAG           release-1.11.0
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR} -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
         )
 
 ExternalProject_Add(googlelog
         GIT_REPOSITORY https://github.com/google/glog.git
         GIT_TAG           v0.5.0
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR} -DWITH_GFLAGS=OFF
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR} -DWITH_GFLAGS=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
         )
 
 include_directories("${CMAKE_BINARY_DIR}/include")
